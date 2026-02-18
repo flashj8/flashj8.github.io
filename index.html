@@ -485,12 +485,21 @@
 
     // Default ratings matrix (0 = unrated)
     const DEFAULT_RATINGS = [
-        [5, 3, 0, 1, 4, 0, 2, 5],
-        [4, 0, 0, 1, 5, 0, 3, 4],
-        [0, 3, 5, 0, 0, 5, 0, 0],
-        [1, 0, 4, 0, 2, 4, 0, 1],
-        [0, 4, 0, 5, 0, 0, 5, 0]
-    ];
+    // Maddox (loves action/complex, dislikes romance-heavy)
+        [5, 1, 0, 0, 5, 0, 2, 5],
+
+    // Aaron (meaningful, uplifting, teamwork)
+        [0, 4, 5, 0, 0, 4, 2, 4],
+
+    // Finely (kids + classics)
+        [2, 4, 5, 5, 0, 5, 0, 0],
+
+    // Sasha (romance + kids)
+        [0, 5, 5, 2, 0, 5, 0, 3],
+
+    // Eshna (emotional drama + kids)
+        [0, 5, 4, 4, 0, 4, 3, 0]
+];
 
     let ratings = DEFAULT_RATINGS.map(r => [...r]);
     let predictions = null;
