@@ -1078,7 +1078,7 @@ export function App() {
   const maxK = Math.min(USERS.length, MOVIES.length);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] text-gray-800">
+    <div className="min-h-screen bg-[#E3DFD6] text-gray-800">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
