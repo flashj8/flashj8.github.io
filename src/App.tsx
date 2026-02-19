@@ -2,6 +2,39 @@ import { useState, useMemo, useCallback } from "react";
 import { computeSVD, reconstructMatrix } from "./svd";
 import type { SVDResult } from "./svd";
 
+// ─── Clean Light Theme ───────────────────────────────────────
+const T = {
+  bg: "#f5f5f7",
+  card: "#ffffff",
+  cardAlt: "#fafafa",
+  border: "#e5e5e5",
+  borderLight: "#f0f0f0",
+  fg: "#1d1d1f",
+  fg1: "#333336",
+  fg2: "#555558",
+  fg3: "#86868b",
+  fg4: "#aeaeb2",
+  blue: "#0071e3",
+  blueDk: "#004aad",
+  blueLight: "#e8f2fd",
+  green: "#28a745",
+  greenDk: "#1a7f37",
+  greenLight: "#e6f9ed",
+  yellow: "#f59e0b",
+  yellowDk: "#b45309",
+  yellowLight: "#fef9e7",
+  red: "#ff3b30",
+  redDk: "#cc2d25",
+  redLight: "#fdecea",
+  orange: "#ff6723",
+  orangeDk: "#c44d15",
+  purple: "#8b5cf6",
+  purpleDk: "#6d28d9",
+  aqua: "#06b6d4",
+  aquaDk: "#0891b2",
+  teal: "#14b8a6",
+};
+
 // ─── Data ─────────────────────────────────────────────────────
 const MOVIES = [
   "The Matrix",
@@ -26,7 +59,7 @@ const INITIAL_RATINGS: number[][] = [
 ];
 
 const USER_COLORS = [
-  "#007AFF", "#34C759", "#FF9500", "#AF52DE", "#FF3B30", "#5AC8FA",
+  T.blue, T.green, T.orange, T.purple, T.red, T.teal,
 ];
 
 const MOVIE_EMOJIS = ["🔫", "🚢", "🧸", "🎩", "❄️", "🌀", "🏃", "🦸"];
@@ -53,15 +86,16 @@ function StarRating({
           <button
             key={star}
             type="button"
-            className={`text-sm leading-none transition-transform duration-100 hover:scale-125 ${
-              active
+            className="text-sm leading-none transition-transform duration-100 hover:scale-125"
+            style={{
+              color: active
                 ? display >= 4
-                  ? "text-orange-400"
+                  ? T.orange
                   : display >= 3
-                  ? "text-yellow-400"
-                  : "text-gray-400"
-                : "text-gray-300 hover:text-gray-400"
-            }`}
+                  ? T.yellow
+                  : T.fg4
+                : T.border,
+            }}
             onMouseEnter={() => setHover(star)}
             onClick={() => onChange(star === value ? 0 : star)}
           >
@@ -82,17 +116,21 @@ function RatingsTable({
   onRatingChange: (u: number, m: number, v: number) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border" style={{ borderColor: T.border, background: T.card }}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-100">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider sticky left-0 bg-white z-10">
+          <tr style={{ borderBottom: `1px solid ${T.borderLight}` }}>
+            <th
+              className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide sticky left-0 z-10"
+              style={{ color: T.fg3, background: T.card }}
+            >
               User
             </th>
             {MOVIES.map((movie, i) => (
               <th
                 key={movie}
-                className="px-3 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                className="px-3 py-3 text-center text-xs font-medium uppercase tracking-wide whitespace-nowrap"
+                style={{ color: T.fg3 }}
               >
                 <div className="flex flex-col items-center gap-0.5">
                   <span className="text-base">{MOVIE_EMOJIS[i]}</span>
@@ -106,11 +144,25 @@ function RatingsTable({
           {USERS.map((user, userIdx) => (
             <tr
               key={user}
-              className={`border-b border-gray-50 hover:bg-blue-50/30 transition-colors ${
-                userIdx % 2 === 0 ? "bg-gray-50/40" : "bg-white"
-              }`}
+              className="transition-colors"
+              style={{
+                borderBottom: `1px solid ${T.borderLight}`,
+                background: userIdx % 2 === 0 ? T.card : T.cardAlt,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f4ff")}
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background =
+                  userIdx % 2 === 0 ? T.card : T.cardAlt)
+              }
             >
-              <td className="px-4 py-2.5 font-medium text-gray-700 sticky left-0 bg-inherit z-10 border-r border-gray-100">
+              <td
+                className="px-4 py-2.5 font-medium sticky left-0 z-10"
+                style={{
+                  color: T.fg1,
+                  background: "inherit",
+                  borderRight: `1px solid ${T.borderLight}`,
+                }}
+              >
                 <div className="flex items-center gap-2">
                   <div
                     className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
@@ -128,7 +180,10 @@ function RatingsTable({
                       value={ratings[userIdx][movieIdx]}
                       onChange={(v) => onRatingChange(userIdx, movieIdx, v)}
                     />
-                    <span className="text-[10px] text-gray-300 font-mono">
+                    <span
+                      className="text-[10px] font-mono"
+                      style={{ color: T.fg4 }}
+                    >
                       {ratings[userIdx][movieIdx] === 0
                         ? "n/a"
                         : ratings[userIdx][movieIdx]}
@@ -163,21 +218,27 @@ function RecommendationsCards({
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {USERS.map((user, userIdx) => {
         const topRecs = recommendations[userIdx];
-        // Discovery: unrated or rated low (<=2) but SVD predicts high (>=3),
-        // OR SVD predicts notably higher than original (diff >= 1.5)
         const discoveries = topRecs.filter(
           (r) =>
             (r.originalRating === 0 && r.predictedRating >= 3.0) ||
             (r.originalRating <= 2 && r.predictedRating >= 3.0) ||
-            (r.originalRating > 0 && r.predictedRating - r.originalRating >= 1.5)
+            (r.originalRating > 0 &&
+              r.predictedRating - r.originalRating >= 1.5)
         );
 
         return (
           <div
             key={user}
-            className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden"
+            className="rounded-2xl overflow-hidden border shadow-sm"
+            style={{ borderColor: T.border, background: T.card }}
           >
-            <div className="px-4 py-3 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
+            <div
+              className="px-4 py-3 flex items-center justify-between"
+              style={{
+                background: T.cardAlt,
+                borderBottom: `1px solid ${T.borderLight}`,
+              }}
+            >
               <div className="flex items-center gap-2">
                 <div
                   className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm"
@@ -186,16 +247,29 @@ function RecommendationsCards({
                   {user[0]}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-gray-800">{user}</h3>
-                  <p className="text-[10px] text-gray-400">
+                  <h3
+                    className="font-medium text-sm tracking-tight"
+                    style={{ color: T.fg }}
+                  >
+                    {user}
+                  </h3>
+                  <p className="text-[10px]" style={{ color: T.fg3 }}>
                     {originalRatings[userIdx].filter((v) => v > 0).length}/
                     {MOVIES.length} rated
                   </p>
                 </div>
               </div>
               {discoveries.length > 0 && (
-                <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium border border-green-100">
-                  {discoveries.length} discover{discoveries.length > 1 ? "ies" : "y"}
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                  style={{
+                    background: T.greenLight,
+                    color: T.greenDk,
+                    border: `1px solid ${T.green}40`,
+                  }}
+                >
+                  {discoveries.length} discover
+                  {discoveries.length > 1 ? "ies" : "y"}
                 </span>
               )}
             </div>
@@ -205,48 +279,65 @@ function RecommendationsCards({
                 const isDiscovery =
                   (rec.originalRating === 0 && rec.predictedRating >= 3.0) ||
                   (rec.originalRating <= 2 && rec.predictedRating >= 3.0) ||
-                  (rec.originalRating > 0 && rec.predictedRating - rec.originalRating >= 1.5);
+                  (rec.originalRating > 0 &&
+                    rec.predictedRating - rec.originalRating >= 1.5);
                 const pct = Math.max(
                   0,
                   Math.min(100, (rec.predictedRating / 5) * 100)
                 );
                 const barColor =
                   rec.predictedRating >= 4
-                    ? "from-green-400 to-green-500"
+                    ? T.green
                     : rec.predictedRating >= 3
-                    ? "from-yellow-300 to-yellow-400"
+                    ? T.yellow
                     : rec.predictedRating >= 2
-                    ? "from-orange-300 to-orange-400"
-                    : "from-red-300 to-red-400";
+                    ? T.orange
+                    : T.red;
 
                 return (
                   <div
                     key={rec.movieIdx}
-                    className={`flex items-center gap-2 px-2 py-1.5 rounded-xl text-xs transition-colors ${
-                      isDiscovery
-                        ? "bg-green-50 border border-green-100"
-                        : "hover:bg-gray-50"
-                    }`}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-xl text-xs transition-colors"
+                    style={{
+                      background: isDiscovery ? T.greenLight : "transparent",
+                      border: isDiscovery
+                        ? `1px solid ${T.green}30`
+                        : "1px solid transparent",
+                    }}
                   >
-                    <span className="w-28 truncate font-medium text-gray-600 flex items-center gap-1">
+                    <span
+                      className="w-28 truncate font-medium flex items-center gap-1"
+                      style={{ color: T.fg2 }}
+                    >
                       {isDiscovery && (
-                        <span className="text-green-500">✦</span>
+                        <span style={{ color: T.green }}>✦</span>
                       )}
-                      {MOVIE_EMOJIS[rec.movieIdx]}{" "}
-                      {rec.movie}
+                      {MOVIE_EMOJIS[rec.movieIdx]} {rec.movie}
                     </span>
                     <div className="flex-1 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="flex-1 h-2 rounded-full overflow-hidden"
+                        style={{ background: T.borderLight }}
+                      >
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-500`}
-                          style={{ width: `${pct}%` }}
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${pct}%`,
+                            background: barColor,
+                          }}
                         />
                       </div>
-                      <span className="text-xs font-mono text-gray-500 w-8 text-right">
+                      <span
+                        className="text-xs font-mono w-8 text-right"
+                        style={{ color: T.fg2 }}
+                      >
                         {rec.predictedRating.toFixed(1)}
                       </span>
                     </div>
-                    <span className="text-[10px] text-gray-300 w-5 text-center font-mono">
+                    <span
+                      className="text-[10px] w-5 text-center font-mono"
+                      style={{ color: T.fg4 }}
+                    >
                       {rec.originalRating === 0 ? "—" : rec.originalRating}
                     </span>
                   </div>
@@ -254,10 +345,16 @@ function RecommendationsCards({
               })}
             </div>
 
-            <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-[10px] text-gray-400">
+            <div
+              className="px-4 py-2 flex items-center gap-3 text-[10px]"
+              style={{
+                borderTop: `1px solid ${T.borderLight}`,
+                color: T.fg3,
+              }}
+            >
               <span>Bar = predicted</span>
               <span>Right # = original</span>
-              <span className="text-green-500">✦ = discovery</span>
+              <span style={{ color: T.green }}>✦ = discovery</span>
             </div>
           </div>
         );
@@ -283,12 +380,17 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
       color: USER_COLORS[i],
     }));
 
+    const movieColors = [
+      T.redDk, T.blue, T.green, T.purple,
+      T.aqua, T.orange, T.yellowDk, T.purpleDk,
+    ];
+
     const moviePts = MOVIES.map((name, j) => ({
       name,
       emoji: MOVIE_EMOJIS[j],
       x: (Vt[0]?.[j] ?? 0) * S[0],
       y: has2 ? (Vt[1]?.[j] ?? 0) * S[1] : 0,
-      color: `hsl(${210 + j * 18}, 55%, 55%)`,
+      color: movieColors[j % movieColors.length],
     }));
 
     return { users: userPts, movies: moviePts };
@@ -305,7 +407,10 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
 
   if (allX.length === 0) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-400 shadow-sm">
+      <div
+        className="rounded-2xl p-8 text-center border"
+        style={{ borderColor: T.border, background: T.card, color: T.fg3 }}
+      >
         No SVD data available
       </div>
     );
@@ -334,29 +439,32 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
   const zeroSy = toY(0);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div
+      className="rounded-2xl overflow-hidden border shadow-sm"
+      style={{ borderColor: T.border, background: T.card }}
+    >
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minHeight: 300 }}>
-        {/* Background */}
-        <rect width={W} height={H} fill="#FAFAFA" />
+        <rect width={W} height={H} fill={T.card} />
 
         {/* Grid */}
-        <line x1={P} y1={zeroSy} x2={W - P} y2={zeroSy} stroke="#E5E7EB" strokeWidth={0.5} strokeDasharray="4,4" />
-        <line x1={zeroSx} y1={P} x2={zeroSx} y2={H - P} stroke="#E5E7EB" strokeWidth={0.5} strokeDasharray="4,4" />
+        <line x1={P} y1={zeroSy} x2={W - P} y2={zeroSy} stroke={T.borderLight} strokeWidth={0.5} strokeDasharray="4,4" />
+        <line x1={zeroSx} y1={P} x2={zeroSx} y2={H - P} stroke={T.borderLight} strokeWidth={0.5} strokeDasharray="4,4" />
 
         {/* Axes */}
-        <line x1={P} y1={H - P} x2={W - P} y2={H - P} stroke="#D1D5DB" strokeWidth={1} />
-        <line x1={P} y1={P} x2={P} y2={H - P} stroke="#D1D5DB" strokeWidth={1} />
+        <line x1={P} y1={H - P} x2={W - P} y2={H - P} stroke={T.fg4} strokeWidth={1} />
+        <line x1={P} y1={P} x2={P} y2={H - P} stroke={T.fg4} strokeWidth={1} />
 
         {/* Axis labels */}
-        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#9CA3AF" fontSize={10}>
+        <text x={W / 2} y={H - 8} textAnchor="middle" fill={T.fg3} fontSize={10} fontFamily="Sora">
           Component 1
         </text>
         <text
           x={12}
           y={H / 2}
           textAnchor="middle"
-          fill="#9CA3AF"
+          fill={T.fg3}
           fontSize={10}
+          fontFamily="Sora"
           transform={`rotate(-90, 12, ${H / 2})`}
         >
           Component 2
@@ -407,17 +515,17 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
                     width={100}
                     height={20}
                     rx={6}
-                    fill="white"
+                    fill={T.card}
                     stroke={pt.color}
                     strokeWidth={1}
-                    filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+                    filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"
                   />
-                  <text x={sx} y={sy - 13} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="600">
+                  <text x={sx} y={sy - 13} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="600" fontFamily="Sora">
                     {pt.emoji} {pt.name}
                   </text>
                 </>
               ) : (
-                <text x={sx} y={sy + 14} textAnchor="middle" fill="#9CA3AF" fontSize={7}>
+                <text x={sx} y={sy + 14} textAnchor="middle" fill={T.fg3} fontSize={7} fontFamily="Sora">
                   {pt.name.length > 10 ? pt.name.slice(0, 9) + "…" : pt.name}
                 </text>
               )}
@@ -444,9 +552,9 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
                 r={r}
                 fill={pt.color}
                 opacity={isH ? 1 : 0.85}
-                stroke={isH ? "white" : "none"}
+                stroke={isH ? T.card : "none"}
                 strokeWidth={2}
-                filter={isH ? "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" : "none"}
+                filter={isH ? "drop-shadow(0 2px 6px rgba(0,0,0,0.15))" : "none"}
               />
               <text
                 x={sx}
@@ -455,6 +563,7 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
                 fill="white"
                 fontSize={10}
                 fontWeight="bold"
+                fontFamily="Sora"
                 style={{ pointerEvents: "none" }}
               >
                 {pt.name[0]}
@@ -467,12 +576,12 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
                     width={64}
                     height={20}
                     rx={6}
-                    fill="white"
+                    fill={T.card}
                     stroke={pt.color}
                     strokeWidth={1}
-                    filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+                    filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"
                   />
-                  <text x={sx} y={sy - 15} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="600">
+                  <text x={sx} y={sy - 15} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="600" fontFamily="Sora">
                     {pt.name}
                   </text>
                 </>
@@ -482,16 +591,19 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
         })}
       </svg>
 
-      <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-6 text-xs text-gray-400">
+      <div
+        className="px-4 py-3 flex items-center gap-6 text-xs"
+        style={{ borderTop: `1px solid ${T.borderLight}`, color: T.fg3 }}
+      >
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-blue-400" />
+          <div className="h-3 w-3 rounded-full" style={{ background: T.blue }} />
           <span>Users</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 bg-blue-400 rotate-45 rounded-[1px]" />
+          <div className="h-3 w-3 rotate-45 rounded-[1px]" style={{ background: T.orange }} />
           <span>Movies</span>
         </div>
-        <span className="text-gray-300 text-[10px]">
+        <span className="text-[10px]" style={{ color: T.fg4 }}>
           Nearby items share similar latent preferences
         </span>
       </div>
@@ -539,7 +651,10 @@ function SingularValuesChart({
 
   if (data.bars.length === 0) {
     return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-400 shadow-sm">
+      <div
+        className="rounded-2xl p-8 text-center border"
+        style={{ borderColor: T.border, background: T.card, color: T.fg3 }}
+      >
         No singular values
       </div>
     );
@@ -559,52 +674,70 @@ function SingularValuesChart({
   const maxS = Math.max(...data.bars.map((b) => b.value), 1);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div
+      className="rounded-2xl overflow-hidden border shadow-sm"
+      style={{ borderColor: T.border, background: T.card }}
+    >
       {/* Energy header */}
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-        <div className="text-xs text-gray-500">
+      <div
+        className="px-4 py-3 flex items-center justify-between"
+        style={{ borderBottom: `1px solid ${T.borderLight}` }}
+      >
+        <div className="text-xs" style={{ color: T.fg2 }}>
           Energy captured with{" "}
-          <span className="text-blue-600 font-mono font-semibold">k={activeK}</span>:
+          <span className="font-mono font-semibold" style={{ color: T.blue }}>
+            k={activeK}
+          </span>
+          :
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="w-32 h-2 rounded-full overflow-hidden"
+            style={{ background: T.borderLight }}
+          >
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
-              style={{ width: `${data.energyCaptured}%` }}
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${data.energyCaptured}%`,
+                background: `linear-gradient(to right, ${T.aqua}, ${T.blue})`,
+              }}
             />
           </div>
-          <span className="text-sm font-mono font-bold text-blue-600">
+          <span
+            className="text-sm font-mono font-bold"
+            style={{ color: T.blue }}
+          >
             {data.energyCaptured.toFixed(1)}%
           </span>
         </div>
       </div>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minHeight: 280 }}>
-        <rect width={W} height={H} fill="#FAFAFA" />
+        <rect width={W} height={H} fill={T.card} />
 
         <defs>
           <linearGradient id="barActive" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#60A5FA" />
-            <stop offset="100%" stopColor="#2563EB" />
+            <stop offset="0%" stopColor={T.blue} />
+            <stop offset="100%" stopColor={T.blueDk} />
           </linearGradient>
           <linearGradient id="barActiveH" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#93C5FD" />
-            <stop offset="100%" stopColor="#3B82F6" />
+            <stop offset="0%" stopColor={T.aqua} />
+            <stop offset="100%" stopColor={T.blue} />
           </linearGradient>
         </defs>
 
         {/* Y axis */}
-        <line x1={PL} y1={PT} x2={PL} y2={PT + cH} stroke="#D1D5DB" strokeWidth={1} />
+        <line x1={PL} y1={PT} x2={PL} y2={PT + cH} stroke={T.fg4} strokeWidth={1} />
         {/* X axis */}
-        <line x1={PL} y1={PT + cH} x2={W - PR} y2={PT + cH} stroke="#D1D5DB" strokeWidth={1} />
+        <line x1={PL} y1={PT + cH} x2={W - PR} y2={PT + cH} stroke={T.fg4} strokeWidth={1} />
 
         {/* Y grid */}
         {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
           const y = PT + cH * (1 - frac);
           return (
             <g key={frac}>
-              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#F3F4F6" strokeWidth={0.5} />
-              <text x={PL - 6} y={y + 3} textAnchor="end" fill="#9CA3AF" fontSize={9}>
+              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke={T.borderLight} strokeWidth={0.5} />
+              <text x={PL - 6} y={y + 3} textAnchor="end" fill={T.fg3} fontSize={9} fontFamily="Sora">
                 {(maxS * frac).toFixed(1)}
               </text>
             </g>
@@ -637,31 +770,63 @@ function SingularValuesChart({
                       ? "url(#barActiveH)"
                       : "url(#barActive)"
                     : isH
-                    ? "#D1D5DB"
-                    : "#E5E7EB"
+                    ? T.fg4
+                    : T.border
                 }
                 opacity={bar.active ? 1 : 0.6}
               />
 
               {isH && (
                 <>
-                  <rect x={x + barW / 2 - 30} y={y - 28} width={60} height={22} rx={6} fill="white" stroke={bar.active ? "#3B82F6" : "#9CA3AF"} strokeWidth={1} filter="drop-shadow(0 1px 2px rgba(0,0,0,0.08))" />
-                  <text x={x + barW / 2} y={y - 14} textAnchor="middle" fill={bar.active ? "#2563EB" : "#6B7280"} fontSize={10} fontFamily="monospace" fontWeight="bold">
+                  <rect
+                    x={x + barW / 2 - 30}
+                    y={y - 28}
+                    width={60}
+                    height={22}
+                    rx={6}
+                    fill={T.card}
+                    stroke={bar.active ? T.blue : T.fg3}
+                    strokeWidth={1}
+                    filter="drop-shadow(0 1px 3px rgba(0,0,0,0.08))"
+                  />
+                  <text
+                    x={x + barW / 2}
+                    y={y - 14}
+                    textAnchor="middle"
+                    fill={bar.active ? T.blueDk : T.fg1}
+                    fontSize={10}
+                    fontFamily="monospace"
+                    fontWeight="bold"
+                  >
                     σ={bar.value.toFixed(2)}
                   </text>
                 </>
               )}
 
-              <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill={bar.active ? "#3B82F6" : "#9CA3AF"} fontSize={8} fontFamily="monospace">
+              <text
+                x={x + barW / 2}
+                y={y - 4}
+                textAnchor="middle"
+                fill={bar.active ? T.blueDk : T.fg3}
+                fontSize={8}
+                fontFamily="monospace"
+              >
                 {bar.pct.toFixed(0)}%
               </text>
 
-              <text x={x + barW / 2} y={PT + cH + 16} textAnchor="middle" fill={bar.active ? "#3B82F6" : "#9CA3AF"} fontSize={10} fontFamily="monospace">
+              <text
+                x={x + barW / 2}
+                y={PT + cH + 16}
+                textAnchor="middle"
+                fill={bar.active ? T.blue : T.fg3}
+                fontSize={10}
+                fontFamily="monospace"
+              >
                 σ{i + 1}
               </text>
 
               {bar.active && (
-                <circle cx={x + barW / 2} cy={PT + cH + 28} r={3} fill="#3B82F6" />
+                <circle cx={x + barW / 2} cy={PT + cH + 28} r={3} fill={T.blue} />
               )}
             </g>
           );
@@ -679,7 +844,7 @@ function SingularValuesChart({
                 })
                 .join(" ")}
               fill="none"
-              stroke="#F97316"
+              stroke={T.orange}
               strokeWidth={1.5}
               strokeDasharray="4,2"
               opacity={0.7}
@@ -687,55 +852,66 @@ function SingularValuesChart({
             {data.cumulativePcts.map((pct, i) => {
               const x = PL + barGap * (i + 1) + barW * i + barW / 2;
               const y = PT + cH * (1 - pct / 100);
-              return <circle key={i} cx={x} cy={y} r={2.5} fill="#F97316" opacity={0.8} />;
+              return (
+                <circle key={i} cx={x} cy={y} r={2.5} fill={T.orange} opacity={0.8} />
+              );
             })}
           </>
         )}
 
         {/* Cutoff line */}
-        {activeK < data.bars.length && (() => {
-          const cutX = PL + barGap * (activeK + 1) + barW * activeK - barGap / 2;
-          return (
-            <line
-              x1={cutX}
-              y1={PT}
-              x2={cutX}
-              y2={PT + cH}
-              stroke="#EF4444"
-              strokeWidth={1}
-              strokeDasharray="5,3"
-              opacity={0.5}
-            />
-          );
-        })()}
+        {activeK < data.bars.length &&
+          (() => {
+            const cutX =
+              PL + barGap * (activeK + 1) + barW * activeK - barGap / 2;
+            return (
+              <line
+                x1={cutX}
+                y1={PT}
+                x2={cutX}
+                y2={PT + cH}
+                stroke={T.red}
+                strokeWidth={1}
+                strokeDasharray="5,3"
+                opacity={0.5}
+              />
+            );
+          })()}
 
         {/* Axis titles */}
-        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#9CA3AF" fontSize={10}>
+        <text x={W / 2} y={H - 8} textAnchor="middle" fill={T.fg3} fontSize={10} fontFamily="Sora">
           Singular Values
         </text>
         <text
           x={12}
           y={PT + cH / 2}
           textAnchor="middle"
-          fill="#9CA3AF"
+          fill={T.fg3}
           fontSize={10}
+          fontFamily="Sora"
           transform={`rotate(-90, 12, ${PT + cH / 2})`}
         >
           Magnitude
         </text>
       </svg>
 
-      <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-6 text-xs text-gray-400">
+      <div
+        className="px-4 py-3 flex items-center gap-6 text-xs"
+        style={{ borderTop: `1px solid ${T.borderLight}`, color: T.fg3 }}
+      >
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-blue-500" />
+          <div className="h-3 w-3 rounded" style={{ background: T.blue }} />
           <span>Active</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-gray-300" />
+          <div className="h-3 w-3 rounded" style={{ background: T.border }} />
           <span>Truncated</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-0.5 w-6" style={{ borderTop: "2px dashed #F97316" }} />
+          <div
+            className="h-0.5 w-6"
+            style={{ borderTop: `2px dashed ${T.orange}` }}
+          />
           <span>Cumulative energy</span>
         </div>
       </div>
@@ -753,7 +929,10 @@ function HeatmapComparison({
   predicted: number[][];
   kValue: number;
 }) {
-  const [hoveredCell, setHoveredCell] = useState<{ r: number; c: number } | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<{
+    r: number;
+    c: number;
+  } | null>(null);
 
   const cellSize = 44;
   const labelW = 64;
@@ -765,35 +944,60 @@ function HeatmapComparison({
 
   function getColor(val: number, max: number) {
     const t = Math.max(0, Math.min(1, val / max));
-    // Apple-ish blue scale: light gray-blue → blue → deep blue
-    const r = Math.round(240 - t * 200);
-    const g = Math.round(243 - t * 160);
-    const b = Math.round(250 - t * 20);
+    // Light blue gradient
+    const r = Math.round(245 - t * 210);
+    const g = Math.round(245 - t * 130);
+    const b = Math.round(247 - t * 20);
     return `rgb(${r},${g},${b})`;
   }
 
   function getTextColor(val: number) {
-    return val >= 3 ? "white" : "#374151";
+    return val >= 3.5 ? "#ffffff" : T.fg;
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-700">Original vs Predicted — Side by Side Heatmap</h3>
-        <p className="text-[10px] text-gray-400 mt-1">
-          Left: original ratings (0 = unrated). Right: SVD predicted scores. Hover to compare differences.
+    <div
+      className="rounded-2xl overflow-hidden border shadow-sm"
+      style={{ borderColor: T.border, background: T.card }}
+    >
+      <div className="px-4 py-3" style={{ borderBottom: `1px solid ${T.borderLight}` }}>
+        <h3 className="text-sm font-medium tracking-tight" style={{ color: T.fg1 }}>
+          Original vs Predicted — Side by Side Heatmap
+        </h3>
+        <p className="text-[10px] mt-1" style={{ color: T.fg3 }}>
+          Left: original ratings (0 = unrated). Right: SVD predicted scores.
+          Hover to compare differences.
         </p>
       </div>
       <div className="overflow-x-auto p-4">
-        <svg viewBox={`0 0 ${totalW + 20} ${totalH}`} className="w-full" style={{ minHeight: 280 }}>
-          {/* Background */}
-          <rect width={totalW + 20} height={totalH} fill="white" />
+        <svg
+          viewBox={`0 0 ${totalW + 20} ${totalH}`}
+          className="w-full"
+          style={{ minHeight: 280 }}
+        >
+          <rect width={totalW + 20} height={totalH} fill={T.card} />
 
           {/* Headers */}
-          <text x={labelW + (MOVIES.length * cellSize) / 2} y={14} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight="600">
+          <text
+            x={labelW + (MOVIES.length * cellSize) / 2}
+            y={14}
+            textAnchor="middle"
+            fill={T.fg1}
+            fontSize={11}
+            fontWeight="600"
+            fontFamily="Sora"
+          >
             Original Ratings
           </text>
-          <text x={w1 + gapBetween + (MOVIES.length * cellSize) / 2} y={14} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight="600">
+          <text
+            x={w1 + gapBetween + (MOVIES.length * cellSize) / 2}
+            y={14}
+            textAnchor="middle"
+            fill={T.fg1}
+            fontSize={11}
+            fontWeight="600"
+            fontFamily="Sora"
+          >
             SVD Predicted
           </text>
 
@@ -804,8 +1008,9 @@ function HeatmapComparison({
                 x={labelW - 6}
                 y={labelH + ui * cellSize + cellSize / 2 + 3}
                 textAnchor="end"
-                fill="#6B7280"
+                fill={T.fg2}
                 fontSize={10}
+                fontFamily="Sora"
               >
                 {user}
               </text>
@@ -813,7 +1018,8 @@ function HeatmapComparison({
                 const x = labelW + mi * cellSize;
                 const y = labelH + ui * cellSize;
                 const val = original[ui][mi];
-                const isH = hoveredCell?.r === ui && hoveredCell?.c === mi;
+                const isH =
+                  hoveredCell?.r === ui && hoveredCell?.c === mi;
                 return (
                   <g
                     key={`o-${ui}-${mi}`}
@@ -825,11 +1031,16 @@ function HeatmapComparison({
                         x={x + cellSize / 2}
                         y={labelH - 8}
                         textAnchor="middle"
-                        fill="#9CA3AF"
+                        fill={T.fg3}
                         fontSize={7}
-                        transform={`rotate(-45, ${x + cellSize / 2}, ${labelH - 8})`}
+                        fontFamily="Sora"
+                        transform={`rotate(-45, ${x + cellSize / 2}, ${
+                          labelH - 8
+                        })`}
                       >
-                        {movie.length > 10 ? movie.slice(0, 9) + "…" : movie}
+                        {movie.length > 10
+                          ? movie.slice(0, 9) + "…"
+                          : movie}
                       </text>
                     )}
                     <rect
@@ -838,15 +1049,15 @@ function HeatmapComparison({
                       width={cellSize - 2}
                       height={cellSize - 2}
                       rx={6}
-                      fill={val === 0 ? "#F9FAFB" : getColor(val, 5)}
-                      stroke={isH ? "#3B82F6" : "#E5E7EB"}
+                      fill={val === 0 ? T.cardAlt : getColor(val, 5)}
+                      stroke={isH ? T.blue : T.borderLight}
                       strokeWidth={isH ? 2 : 0.5}
                     />
                     <text
                       x={x + cellSize / 2}
                       y={y + cellSize / 2 + 4}
                       textAnchor="middle"
-                      fill={val === 0 ? "#D1D5DB" : getTextColor(val)}
+                      fill={val === 0 ? T.fg4 : getTextColor(val)}
                       fontSize={11}
                       fontWeight="bold"
                       fontFamily="monospace"
@@ -864,7 +1075,7 @@ function HeatmapComparison({
             x={w1 + gapBetween / 2}
             y={labelH + (USERS.length * cellSize) / 2 + 4}
             textAnchor="middle"
-            fill="#D1D5DB"
+            fill={T.fg4}
             fontSize={20}
           >
             →
@@ -877,7 +1088,8 @@ function HeatmapComparison({
                 const x = w1 + gapBetween + mi * cellSize;
                 const y = labelH + ui * cellSize;
                 const val = predicted[ui]?.[mi] ?? 0;
-                const isH = hoveredCell?.r === ui && hoveredCell?.c === mi;
+                const isH =
+                  hoveredCell?.r === ui && hoveredCell?.c === mi;
                 const origVal = original[ui][mi];
                 const diff = origVal > 0 ? val - origVal : 0;
                 return (
@@ -891,11 +1103,16 @@ function HeatmapComparison({
                         x={x + cellSize / 2}
                         y={labelH - 8}
                         textAnchor="middle"
-                        fill="#9CA3AF"
+                        fill={T.fg3}
                         fontSize={7}
-                        transform={`rotate(-45, ${x + cellSize / 2}, ${labelH - 8})`}
+                        fontFamily="Sora"
+                        transform={`rotate(-45, ${x + cellSize / 2}, ${
+                          labelH - 8
+                        })`}
                       >
-                        {movie.length > 10 ? movie.slice(0, 9) + "…" : movie}
+                        {movie.length > 10
+                          ? movie.slice(0, 9) + "…"
+                          : movie}
                       </text>
                     )}
                     <rect
@@ -905,12 +1122,16 @@ function HeatmapComparison({
                       height={cellSize - 2}
                       rx={6}
                       fill={getColor(val, 5)}
-                      stroke={isH ? "#3B82F6" : "#E5E7EB"}
+                      stroke={isH ? T.blue : T.borderLight}
                       strokeWidth={isH ? 2 : 0.5}
                     />
                     <text
                       x={x + cellSize / 2}
-                      y={y + cellSize / 2 + (isH && origVal > 0 ? -1 : 4)}
+                      y={
+                        y +
+                        cellSize / 2 +
+                        (isH && origVal > 0 ? -1 : 4)
+                      }
                       textAnchor="middle"
                       fill={getTextColor(val)}
                       fontSize={10}
@@ -924,12 +1145,13 @@ function HeatmapComparison({
                         x={x + cellSize / 2}
                         y={y + cellSize / 2 + 13}
                         textAnchor="middle"
-                        fill={diff >= 0 ? "#22C55E" : "#EF4444"}
+                        fill={diff >= 0 ? T.green : T.red}
                         fontSize={7}
                         fontFamily="monospace"
                         fontWeight="600"
                       >
-                        {diff >= 0 ? "+" : ""}{diff.toFixed(1)}
+                        {diff >= 0 ? "+" : ""}
+                        {diff.toFixed(1)}
                       </text>
                     )}
                     {isH && origVal === 0 && (
@@ -937,7 +1159,7 @@ function HeatmapComparison({
                         x={x + cellSize / 2}
                         y={y + cellSize / 2 + 13}
                         textAnchor="middle"
-                        fill="#3B82F6"
+                        fill={T.blue}
                         fontSize={7}
                         fontFamily="monospace"
                         fontWeight="600"
@@ -957,41 +1179,500 @@ function HeatmapComparison({
             const y = totalH - 12;
             return (
               <g key={`scale-${v}`}>
-                <rect x={x} y={y - 10} width={20} height={10} rx={3} fill={v === 0 ? "#F9FAFB" : getColor(v, 5)} stroke="#E5E7EB" strokeWidth={0.5} />
-                <text x={x + 10} y={y + 8} textAnchor="middle" fill="#9CA3AF" fontSize={7}>{v}</text>
+                <rect
+                  x={x}
+                  y={y - 10}
+                  width={20}
+                  height={10}
+                  rx={3}
+                  fill={v === 0 ? T.cardAlt : getColor(v, 5)}
+                  stroke={T.borderLight}
+                  strokeWidth={0.5}
+                />
+                <text
+                  x={x + 10}
+                  y={y + 8}
+                  textAnchor="middle"
+                  fill={T.fg3}
+                  fontSize={7}
+                  fontFamily="Sora"
+                >
+                  {v}
+                </text>
               </g>
             );
           })}
-          <text x={totalW - 150 - 4} y={totalH - 10} textAnchor="end" fill="#9CA3AF" fontSize={8}>Scale:</text>
+          <text
+            x={totalW - 150 - 4}
+            y={totalH - 10}
+            textAnchor="end"
+            fill={T.fg3}
+            fontSize={8}
+            fontFamily="Sora"
+          >
+            Scale:
+          </text>
         </svg>
       </div>
 
       {/* Explanation */}
-      <div className="px-5 py-4 border-t border-gray-100 bg-blue-50/50">
-        <h4 className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          Why don't the heatmaps match exactly?
+      <div
+        className="px-5 py-4"
+        style={{
+          borderTop: `1px solid ${T.borderLight}`,
+          background: T.blueLight,
+        }}
+      >
+        <h4
+          className="text-xs font-medium tracking-tight mb-2 flex items-center gap-1.5"
+          style={{ color: T.blueDk }}
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          Why don&apos;t the heatmaps match exactly?
         </h4>
-        <p className="text-[11px] text-gray-600 leading-relaxed">
-          The predicted heatmap is a <strong className="text-gray-700">rank-{kValue} approximation</strong> of the original
-          matrix — not a copy. SVD decomposes ratings into {kValue} latent factor{kValue > 1 ? "s" : ""} (think of them as
-          hidden themes like "action lover" or "animation fan"). When we reconstruct
-          with only the top {kValue} factor{kValue > 1 ? "s" : ""}, we <strong className="text-gray-700">smooth out noise and fill in gaps</strong>:
+        <p
+          className="text-[11px] leading-relaxed"
+          style={{ color: T.fg2 }}
+        >
+          The predicted heatmap is a{" "}
+          <strong style={{ color: T.fg }}>
+            rank-{kValue} approximation
+          </strong>{" "}
+          of the original matrix — not a copy. SVD decomposes ratings into{" "}
+          {kValue} latent factor{kValue > 1 ? "s" : ""} (think of them as
+          hidden themes like &quot;action lover&quot; or &quot;animation
+          fan&quot;). When we reconstruct with only the top {kValue} factor
+          {kValue > 1 ? "s" : ""}, we{" "}
+          <strong style={{ color: T.fg }}>
+            smooth out noise and fill in gaps
+          </strong>
+          :
         </p>
-        <ul className="text-[11px] text-gray-600 mt-2 space-y-1 list-none">
+        <ul className="text-[11px] mt-2 space-y-1 list-none" style={{ color: T.fg2 }}>
           <li className="flex items-start gap-1.5">
-            <span className="text-blue-500 mt-0.5">▸</span>
-            <span><strong className="text-gray-700">Rated cells differ</strong> because the low-rank approximation can't perfectly reproduce every individual rating — it captures the dominant patterns while discarding minor variations (noise). A user's "3" might predict as 3.4 because similar users tended to rate that movie slightly higher.</span>
+            <span style={{ color: T.blue }} className="mt-0.5">
+              ▸
+            </span>
+            <span>
+              <strong style={{ color: T.fg }}>Rated cells differ</strong>{" "}
+              because the low-rank approximation can&apos;t perfectly reproduce
+              every individual rating — it captures the dominant patterns while
+              discarding minor variations (noise). A user&apos;s &quot;3&quot;
+              might predict as 3.4 because similar users tended to rate that
+              movie slightly higher.
+            </span>
           </li>
           <li className="flex items-start gap-1.5">
-            <span className="text-green-500 mt-0.5">▸</span>
-            <span><strong className="text-gray-700">Unrated cells get filled</strong> — this is the magic of SVD. By learning latent patterns from existing ratings, the model infers what a user <em>would have</em> rated a movie they haven't seen. A high predicted score on an unrated movie = a strong recommendation.</span>
+            <span style={{ color: T.green }} className="mt-0.5">
+              ▸
+            </span>
+            <span>
+              <strong style={{ color: T.fg }}>
+                Unrated cells get filled
+              </strong>{" "}
+              — this is the magic of SVD. By learning latent patterns from
+              existing ratings, the model infers what a user{" "}
+              <em>would have</em> rated a movie they haven&apos;t seen. A high
+              predicted score on an unrated movie = a strong recommendation.
+            </span>
           </li>
           <li className="flex items-start gap-1.5">
-            <span className="text-orange-500 mt-0.5">▸</span>
-            <span><strong className="text-gray-700">Lower k = more smoothing</strong>. Try moving the rank slider: at k=1, everything collapses to one pattern; at k={Math.min(USERS.length, MOVIES.length)}, the approximation is nearly exact. The sweet spot captures real preferences without overfitting to noise.</span>
+            <span style={{ color: T.orange }} className="mt-0.5">
+              ▸
+            </span>
+            <span>
+              <strong style={{ color: T.fg }}>
+                Lower k = more smoothing
+              </strong>
+              . Try moving the rank slider: at k=1, everything collapses to one
+              pattern; at k={Math.min(USERS.length, MOVIES.length)}, the
+              approximation is nearly exact. The sweet spot captures real
+              preferences without overfitting to noise.
+            </span>
           </li>
         </ul>
+      </div>
+    </div>
+  );
+}
+
+// ─── Decomposed Matrices Visualization ───────────────────────
+function DecomposedMatrices({
+  svd,
+  kValue,
+}: {
+  svd: SVDResult;
+  kValue: number;
+}) {
+  const { U, S, Vt } = svd;
+  const k = Math.min(kValue, S.length);
+
+  if (S.length === 0 || U.length === 0 || Vt.length === 0) {
+    return (
+      <div
+        className="rounded-2xl p-8 text-center border"
+        style={{ borderColor: T.border, background: T.card, color: T.fg3 }}
+      >
+        No SVD decomposition available
+      </div>
+    );
+  }
+
+  const truncU = U.map((row) => row.slice(0, k));
+  const truncS = S.slice(0, k);
+  const truncVt = Vt.slice(0, k);
+
+  function valColor(val: number, intensity: number): string {
+    const clamped = Math.max(-1, Math.min(1, val / intensity));
+    if (clamped >= 0) {
+      const t = clamped;
+      const r = Math.round(245 - t * 210);
+      const g = Math.round(245 - t * 130);
+      const b = Math.round(247 - t * 20);
+      return `rgb(${r},${g},${b})`;
+    } else {
+      const t = -clamped;
+      const r = Math.round(245 + t * 10);
+      const g = Math.round(245 - t * 186);
+      const b = Math.round(247 - t * 199);
+      return `rgb(${r},${g},${b})`;
+    }
+  }
+
+  function valTextColor(val: number, intensity: number): string {
+    const clamped = Math.abs(val / intensity);
+    return clamped > 0.6 ? "#ffffff" : T.fg;
+  }
+
+  const maxU = Math.max(...truncU.flat().map(Math.abs), 0.01);
+  const maxVt = Math.max(...truncVt.flat().map(Math.abs), 0.01);
+
+  const cellW = 52;
+  const cellH = 32;
+  const labelW = 56;
+  const labelH = 24;
+  const matGap = 24;
+
+  function renderMatrix(
+    data: number[][],
+    rows: number,
+    cols: number,
+    rowLabels: string[],
+    colLabels: string[],
+    maxAbs: number,
+    offsetX: number,
+    offsetY: number,
+    title: string,
+    titleColor: string,
+    isDiagonal?: boolean,
+  ) {
+    const mW = labelW + cols * cellW;
+    const mH = labelH + rows * cellH;
+    const elements = [];
+
+    elements.push(
+      <text
+        key="title"
+        x={offsetX + mW / 2}
+        y={offsetY - 10}
+        textAnchor="middle"
+        fill={titleColor}
+        fontSize={13}
+        fontWeight="700"
+        fontFamily="Sora"
+      >
+        {title}
+      </text>
+    );
+
+    elements.push(
+      <text
+        key="size"
+        x={offsetX + mW / 2}
+        y={offsetY + mH + 16}
+        textAnchor="middle"
+        fill={T.fg3}
+        fontSize={9}
+        fontFamily="Sora"
+      >
+        {rows} × {cols}
+      </text>
+    );
+
+    colLabels.forEach((label, ci) => {
+      elements.push(
+        <text
+          key={`col-${ci}`}
+          x={offsetX + labelW + ci * cellW + cellW / 2}
+          y={offsetY + labelH - 6}
+          textAnchor="middle"
+          fill={T.fg3}
+          fontSize={8}
+          fontFamily="Sora"
+        >
+          {label}
+        </text>
+      );
+    });
+
+    for (let ri = 0; ri < rows; ri++) {
+      elements.push(
+        <text
+          key={`row-${ri}`}
+          x={offsetX + labelW - 6}
+          y={offsetY + labelH + ri * cellH + cellH / 2 + 3}
+          textAnchor="end"
+          fill={T.fg2}
+          fontSize={9}
+          fontFamily="Sora"
+        >
+          {rowLabels[ri]}
+        </text>
+      );
+
+      for (let ci = 0; ci < cols; ci++) {
+        const val = data[ri][ci];
+        const x = offsetX + labelW + ci * cellW;
+        const y = offsetY + labelH + ri * cellH;
+        const isActive = isDiagonal ? ri === ci : true;
+
+        elements.push(
+          <g key={`cell-${ri}-${ci}`}>
+            <rect
+              x={x + 1}
+              y={y + 1}
+              width={cellW - 2}
+              height={cellH - 2}
+              rx={5}
+              fill={isActive ? valColor(val, maxAbs) : T.cardAlt}
+              stroke={T.borderLight}
+              strokeWidth={0.5}
+            />
+            <text
+              x={x + cellW / 2}
+              y={y + cellH / 2 + 4}
+              textAnchor="middle"
+              fill={isActive ? valTextColor(val, maxAbs) : T.fg4}
+              fontSize={val === 0 && isDiagonal && ri !== ci ? 8 : 9}
+              fontWeight="600"
+              fontFamily="monospace"
+            >
+              {isDiagonal && ri !== ci ? "0" : val.toFixed(2)}
+            </text>
+          </g>
+        );
+      }
+    }
+
+    const bx1 = offsetX + labelW - 2;
+    const by1 = offsetY + labelH;
+    const bx2 = offsetX + labelW + cols * cellW + 2;
+    const by2 = offsetY + labelH + rows * cellH;
+    const bracketW = 6;
+
+    elements.push(
+      <path
+        key="lbracket"
+        d={`M${bx1},${by1} L${bx1 - bracketW},${by1} L${bx1 - bracketW},${by2} L${bx1},${by2}`}
+        fill="none"
+        stroke={T.fg3}
+        strokeWidth={1.5}
+      />
+    );
+    elements.push(
+      <path
+        key="rbracket"
+        d={`M${bx2},${by1} L${bx2 + bracketW},${by1} L${bx2 + bracketW},${by2} L${bx2},${by2}`}
+        fill="none"
+        stroke={T.fg3}
+        strokeWidth={1.5}
+      />
+    );
+
+    return { elements, width: mW, height: mH };
+  }
+
+  const sigmaMatrix: number[][] = [];
+  for (let i = 0; i < k; i++) {
+    const row: number[] = [];
+    for (let j = 0; j < k; j++) {
+      row.push(i === j ? truncS[i] : 0);
+    }
+    sigmaMatrix.push(row);
+  }
+
+  const sigmaLabels = Array.from({ length: k }, (_, i) => `σ${i + 1}`);
+  const compLabels = Array.from({ length: k }, (_, i) => `c${i + 1}`);
+  const movieShortLabels = MOVIES.map((m) => m.length > 7 ? m.slice(0, 6) + "…" : m);
+
+  const padTop = 36;
+  const uResult = renderMatrix(
+    truncU, USERS.length, k,
+    USERS, compLabels,
+    maxU, 0, padTop,
+    `U (Users × Components)`, T.blue, false
+  );
+  const sResult = renderMatrix(
+    sigmaMatrix, k, k,
+    sigmaLabels, sigmaLabels,
+    Math.max(...truncS, 0.01),
+    uResult.width + matGap, padTop,
+    `Σ (Singular Values)`, T.orange, true
+  );
+  const vtResult = renderMatrix(
+    truncVt, k, MOVIES.length,
+    compLabels, movieShortLabels,
+    maxVt, uResult.width + matGap + sResult.width + matGap, padTop,
+    `Vᵀ (Components × Movies)`, T.green, false
+  );
+
+  const totalW = uResult.width + matGap + sResult.width + matGap + vtResult.width + 20;
+  const maxH = Math.max(uResult.height, sResult.height, vtResult.height);
+  const totalH = padTop + maxH + 34;
+
+  const multX1 = uResult.width + matGap / 2;
+  const multX2 = uResult.width + matGap + sResult.width + matGap / 2;
+  const multY = padTop + labelH + maxH / 2;
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden border shadow-sm"
+      style={{ borderColor: T.border, background: T.card }}
+    >
+      <div
+        className="px-5 py-4"
+        style={{ borderBottom: `1px solid ${T.borderLight}` }}
+      >
+        <h3
+          className="text-sm font-semibold tracking-tight flex items-center gap-2"
+          style={{ color: T.fg }}
+        >
+          <span className="font-mono text-base" style={{ color: T.blue }}>R</span>
+          <span style={{ color: T.fg3 }}>=</span>
+          <span className="font-mono text-base" style={{ color: T.blue }}>U</span>
+          <span style={{ color: T.fg3 }}>·</span>
+          <span className="font-mono text-base" style={{ color: T.orange }}>Σ</span>
+          <span style={{ color: T.fg3 }}>·</span>
+          <span className="font-mono text-base" style={{ color: T.green }}>Vᵀ</span>
+          <span className="text-xs font-normal ml-2" style={{ color: T.fg3 }}>
+            — Truncated at rank k={kValue}
+          </span>
+        </h3>
+      </div>
+
+      <div className="overflow-x-auto p-4">
+        <svg
+          viewBox={`-10 0 ${totalW + 20} ${totalH}`}
+          className="w-full"
+          style={{ minHeight: 240, maxHeight: 420 }}
+        >
+          <rect x={-10} y={0} width={totalW + 20} height={totalH} fill={T.card} />
+
+          {uResult.elements}
+          {sResult.elements}
+          {vtResult.elements}
+
+          <text
+            x={multX1}
+            y={multY}
+            textAnchor="middle"
+            fill={T.fg2}
+            fontSize={18}
+            fontWeight="700"
+            fontFamily="Sora"
+          >
+            ×
+          </text>
+          <text
+            x={multX2}
+            y={multY}
+            textAnchor="middle"
+            fill={T.fg2}
+            fontSize={18}
+            fontWeight="700"
+            fontFamily="Sora"
+          >
+            ×
+          </text>
+        </svg>
+      </div>
+
+      <div
+        className="px-5 py-4 grid grid-cols-1 md:grid-cols-3 gap-4"
+        style={{ borderTop: `1px solid ${T.borderLight}` }}
+      >
+        <div className="rounded-xl p-3" style={{ background: T.blueLight, border: `1px solid ${T.blue}20` }}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="h-5 w-5 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ background: T.blue }}>U</div>
+            <h4 className="text-xs font-semibold" style={{ color: T.blueDk }}>User–Feature Matrix</h4>
+          </div>
+          <p className="text-[11px] leading-relaxed" style={{ color: T.fg2 }}>
+            Each row represents a user, and each column is a latent feature (hidden preference dimension).
+            The values tell you <strong style={{ color: T.fg }}>how strongly each user relates to each latent feature</strong>.
+            For example, a high value in feature 1 might indicate a preference for action films.
+          </p>
+          <p className="text-[10px] mt-1.5 font-mono" style={{ color: T.fg3 }}>
+            Shape: {USERS.length} users × {k} components
+          </p>
+        </div>
+
+        <div className="rounded-xl p-3" style={{ background: T.yellowLight, border: `1px solid ${T.yellow}20` }}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="h-5 w-5 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ background: T.orange }}>Σ</div>
+            <h4 className="text-xs font-semibold" style={{ color: T.orangeDk }}>Singular Values (Strength)</h4>
+          </div>
+          <p className="text-[11px] leading-relaxed" style={{ color: T.fg2 }}>
+            A diagonal matrix where each value σᵢ represents the <strong style={{ color: T.fg }}>importance or &quot;energy&quot; of each latent feature</strong>.
+            Larger singular values mean that feature explains more variance in the data.
+            σ₁ is always the largest — the dominant pattern in the ratings.
+          </p>
+          <p className="text-[10px] mt-1.5 font-mono" style={{ color: T.fg3 }}>
+            Shape: {k} × {k} diagonal
+          </p>
+        </div>
+
+        <div className="rounded-xl p-3" style={{ background: T.greenLight, border: `1px solid ${T.green}20` }}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="h-5 w-5 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ background: T.green }}>Vᵀ</div>
+            <h4 className="text-xs font-semibold" style={{ color: T.greenDk }}>Movie–Feature Matrix</h4>
+          </div>
+          <p className="text-[11px] leading-relaxed" style={{ color: T.fg2 }}>
+            Each row is a latent feature and each column is a movie. The values indicate <strong style={{ color: T.fg }}>how much each movie belongs to each latent feature</strong>.
+            Movies with similar column patterns are perceived similarly by the SVD — this is how it finds &quot;similar movies&quot; even without genre metadata.
+          </p>
+          <p className="text-[10px] mt-1.5 font-mono" style={{ color: T.fg3 }}>
+            Shape: {k} components × {MOVIES.length} movies
+          </p>
+        </div>
+      </div>
+
+      <div
+        className="px-5 py-3 text-[11px] leading-relaxed"
+        style={{ borderTop: `1px solid ${T.borderLight}`, background: T.yellowLight, color: T.fg2 }}
+      >
+        <strong style={{ color: T.yellowDk }}>How prediction works:</strong>{" "}
+        To predict user <em>i</em>&apos;s rating for movie <em>j</em>, we compute the dot product of
+        user <em>i</em>&apos;s row in <span className="font-mono" style={{ color: T.blue }}>U</span>,
+        scaled by the singular values in <span className="font-mono" style={{ color: T.orange }}>Σ</span>,
+        and movie <em>j</em>&apos;s column in <span className="font-mono" style={{ color: T.green }}>Vᵀ</span>.
+        By truncating to only {k} component{k > 1 ? "s" : ""}, we keep the most meaningful patterns and discard noise — this is what enables generalization to unseen ratings.
+        {k < S.length && (
+          <span style={{ color: T.red }}>
+            {" "}Currently using {k} of {S.length} available components, capturing the top patterns while filtering noise.
+          </span>
+        )}
       </div>
     </div>
   );
@@ -1020,10 +1701,8 @@ export function App() {
     setKValue(3);
   }, []);
 
-  // SVD computation
   const svdResult = useMemo(() => {
     try {
-      // Replace 0s with row-mean for SVD input
       const normalized = ratings.map((row) => {
         const nonZero = row.filter((v) => v > 0);
         const mean =
@@ -1033,7 +1712,6 @@ export function App() {
         return row.map((v) => (v === 0 ? mean : v));
       });
 
-      // Center around global mean
       const allVals = normalized.flat();
       const globalMean =
         allVals.reduce((a, b) => a + b, 0) / allVals.length;
@@ -1054,12 +1732,13 @@ export function App() {
     } catch {
       return {
         svd: { U: [], S: [], Vt: [] } as SVDResult,
-        predicted: ratings.map((row) => row.map((v) => (v === 0 ? 2.5 : v))),
+        predicted: ratings.map((row) =>
+          row.map((v) => (v === 0 ? 2.5 : v))
+        ),
       };
     }
   }, [ratings, kValue]);
 
-  // Recommendations
   const recommendations = useMemo(() => {
     return USERS.map((_, userIdx) => {
       const predicted = svdResult.predicted[userIdx];
@@ -1078,26 +1757,48 @@ export function App() {
   const maxK = Math.min(USERS.length, MOVIES.length);
 
   return (
-    <div className="min-h-screen bg-[#E3DFD6] text-gray-800">
+    <div className="min-h-screen" style={{ background: T.bg, color: T.fg }}>
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
+      <header
+        className="sticky top-0 z-50 shadow-sm"
+        style={{
+          borderBottom: `1px solid ${T.border}`,
+          background: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-xl">
+            <div
+              className="h-10 w-10 rounded-xl flex items-center justify-center shadow-md text-xl"
+              style={{
+                background: `linear-gradient(135deg, ${T.blue}, ${T.purple})`,
+              }}
+            >
               🎬
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">
+              <h1
+                className="text-xl font-semibold tracking-tight"
+                style={{ color: T.fg }}
+              >
                 SVD Movie Recommender
               </h1>
-              <p className="text-xs text-gray-400">
-                Singular Value Decomposition · Interactive Demo · Julian Juang and Luiz Felipe Costa Coimbra
+              <p className="text-xs font-normal" style={{ color: T.fg3 }}>
+                Singular Value Decomposition · Interactive Demo
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-              <label className="text-xs text-gray-500 font-medium">
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}
+            >
+              <label
+                className="text-xs font-medium"
+                style={{ color: T.fg2 }}
+              >
                 SVD Rank (k):
               </label>
               <input
@@ -1106,15 +1807,31 @@ export function App() {
                 max={maxK}
                 value={kValue}
                 onChange={(e) => setKValue(Number(e.target.value))}
-                className="w-24 accent-blue-500"
+                className="w-24"
               />
-              <span className="text-sm font-mono text-blue-600 w-4 text-center font-semibold">
+              <span
+                className="text-sm font-mono w-4 text-center font-semibold"
+                style={{ color: T.blue }}
+              >
                 {kValue}
               </span>
             </div>
             <button
               onClick={handleReset}
-              className="px-3 py-2 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer text-gray-600"
+              className="px-3 py-2 text-xs font-medium rounded-xl transition-colors cursor-pointer border"
+              style={{
+                background: T.card,
+                borderColor: T.border,
+                color: T.fg2,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = T.cardAlt;
+                e.currentTarget.style.borderColor = T.fg4;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = T.card;
+                e.currentTarget.style.borderColor = T.border;
+              }}
             >
               Reset
             </button>
@@ -1124,13 +1841,28 @@ export function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Info */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-sm text-gray-600 leading-relaxed">
-            <span className="font-semibold text-blue-600">How it works:</span>{" "}
+        <div
+          className="rounded-2xl p-4 border shadow-sm"
+          style={{ borderColor: T.border, background: T.card }}
+        >
+          <p className="text-sm leading-relaxed" style={{ color: T.fg2 }}>
+            <span className="font-semibold" style={{ color: T.blue }}>
+              How it works:
+            </span>{" "}
             SVD decomposes the user-movie ratings matrix{" "}
-            <span className="font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded">R ≈ U·Σ·Vᵀ</span>{" "}
+            <span
+              className="font-mono px-1 py-0.5 rounded"
+              style={{ color: T.blueDk, background: T.blueLight }}
+            >
+              R ≈ U·Σ·Vᵀ
+            </span>{" "}
             into latent factors. By keeping only the top{" "}
-            <span className="font-mono text-blue-600 font-semibold">k={kValue}</span>{" "}
+            <span
+              className="font-mono font-semibold"
+              style={{ color: T.blue }}
+            >
+              k={kValue}
+            </span>{" "}
             singular values, we capture dominant patterns (e.g., genre
             preferences) and predict missing ratings. Click any star below to
             change ratings and see recommendations update live.
@@ -1140,7 +1872,7 @@ export function App() {
         {/* 1: Ratings Table */}
         <section>
           <SectionHeader
-            color="from-blue-500 to-blue-600"
+            color={`${T.blue}, ${T.blueDk}`}
             title="User Ratings Matrix"
             subtitle="Click stars to edit · 0 = not rated"
           />
@@ -1153,7 +1885,7 @@ export function App() {
         {/* 2: Recommendations */}
         <section>
           <SectionHeader
-            color="from-green-500 to-green-600"
+            color={`${T.green}, ${T.greenDk}`}
             title="Predicted Ratings & Discoveries"
             subtitle={`Reconstructed from rank-${kValue} SVD`}
           />
@@ -1166,7 +1898,7 @@ export function App() {
         {/* 3: Heatmap Comparison */}
         <section>
           <SectionHeader
-            color="from-orange-400 to-orange-500"
+            color={`${T.orange}, ${T.orangeDk}`}
             title="Original vs Predicted Heatmap"
             subtitle="Visual comparison of actual and SVD-predicted ratings"
           />
@@ -1181,7 +1913,7 @@ export function App() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section>
             <SectionHeader
-              color="from-purple-500 to-purple-600"
+              color={`${T.purple}, ${T.purpleDk}`}
               title="Latent Space (2D)"
               subtitle="Users & Movies projected in SVD space"
             />
@@ -1189,16 +1921,33 @@ export function App() {
           </section>
           <section>
             <SectionHeader
-              color="from-red-400 to-red-500"
+              color={`${T.red}, ${T.redDk}`}
               title="Singular Values"
               subtitle="Energy distribution across components"
             />
             <SingularValuesChart svd={svdResult.svd} activeK={kValue} />
           </section>
         </div>
+
+        {/* 5: Decomposed Matrices */}
+        <section>
+          <SectionHeader
+            color={`${T.yellow}, ${T.yellowDk}`}
+            title="SVD Decomposition"
+            subtitle="The three matrices that make up the factorization"
+          />
+          <DecomposedMatrices svd={svdResult.svd} kValue={kValue} />
+        </section>
       </main>
 
-      <footer className="border-t border-gray-200 mt-12 py-6 text-center text-xs text-gray-400 bg-white">
+      <footer
+        className="mt-12 py-6 text-center text-xs font-normal"
+        style={{
+          borderTop: `1px solid ${T.border}`,
+          color: T.fg3,
+          background: T.bg,
+        }}
+      >
         SVD Movie Recommender System · Built with React & Tailwind CSS
       </footer>
     </div>
@@ -1216,9 +1965,19 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <div className={`h-6 w-1 rounded-full bg-gradient-to-b ${color}`} />
-      <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
-      <span className="text-xs text-gray-400 ml-2">{subtitle}</span>
+      <div
+        className="h-6 w-1 rounded-full"
+        style={{ background: `linear-gradient(to bottom, ${color})` }}
+      />
+      <h2
+        className="text-lg font-semibold tracking-tight"
+        style={{ color: T.fg }}
+      >
+        {title}
+      </h2>
+      <span className="text-xs font-normal ml-2" style={{ color: T.fg3 }}>
+        {subtitle}
+      </span>
     </div>
   );
 }
