@@ -14,7 +14,7 @@ const MOVIES = [
   "The Avengers",
 ];
 
-const USERS = ["Alice", "Bob", "Carol", "Dave", "Eve", "Frank"];
+const USERS = ["Madoxx", "Aron", "Finly", "Sacha", "Ehsna", "Louise"];
 
 const INITIAL_RATINGS: number[][] = [
   [5, 1, 2, 5, 1, 5, 3, 4],
