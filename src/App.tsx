@@ -1091,7 +1091,7 @@ export function App() {
                 SVD Movie Recommender
               </h1>
               <p className="text-xs text-gray-400">
-                Singular Value Decomposition · Interactive Demo
+                Singular Value Decomposition · Interactive Demo · Julian Juang and Luiz Felipe Costa Coimbra
               </p>
             </div>
           </div>
