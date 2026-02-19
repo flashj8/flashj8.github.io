@@ -14,19 +14,19 @@ const MOVIES = [
   "The Avengers",
 ];
 
-const USERS = ["Madoxx", "Aron", "Finly", "Sacha", "Ehsna", "Louise"];
+const USERS = ["Madox", "Aron", "Louis", "Finely", "Ehsna", "Sacha"];
 
 const INITIAL_RATINGS: number[][] = [
-  [5, 1, 2, 5, 1, 5, 3, 4],
-  [1, 5, 4, 2, 5, 1, 4, 2],
-  [4, 2, 1, 4, 1, 4, 2, 5],
-  [2, 4, 5, 1, 5, 2, 5, 1],
-  [5, 1, 3, 4, 2, 5, 2, 5],
+  [5, 1, 2, 0, 1, 5, 3, 4],
+  [1, 5, 4, 2, 5, 0, 4, 2],
+  [4, 2, 1, 4, 1, 4, 2, 0],
+  [0, 4, 5, 1, 5, 2, 5, 1],
+  [5, 1, 3, 4, 0, 5, 2, 5],
   [1, 5, 4, 2, 4, 0, 3, 0],
 ];
 
 const USER_COLORS = [
-  "#e879f9", "#38bdf8", "#4ade80", "#facc15", "#fb923c", "#f87171",
+  "#007AFF", "#34C759", "#FF9500", "#AF52DE", "#FF3B30", "#5AC8FA",
 ];
 
 const MOVIE_EMOJIS = ["🔫", "🚢", "🧸", "🎩", "❄️", "🌀", "🏃", "🦸"];
@@ -56,11 +56,11 @@ function StarRating({
             className={`text-sm leading-none transition-transform duration-100 hover:scale-125 ${
               active
                 ? display >= 4
-                  ? "text-emerald-400"
+                  ? "text-orange-400"
                   : display >= 3
                   ? "text-yellow-400"
-                  : "text-orange-400"
-                : "text-gray-700 hover:text-gray-500"
+                  : "text-gray-400"
+                : "text-gray-300 hover:text-gray-400"
             }`}
             onMouseEnter={() => setHover(star)}
             onClick={() => onChange(star === value ? 0 : star)}
@@ -82,11 +82,11 @@ function RatingsTable({
   onRatingChange: (u: number, m: number, v: number) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-800 bg-gray-900/80">
+    <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-800">
-            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider sticky left-0 bg-gray-900 z-10">
+          <tr className="border-b border-gray-100">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider sticky left-0 bg-white z-10">
               User
             </th>
             {MOVIES.map((movie, i) => (
@@ -106,14 +106,14 @@ function RatingsTable({
           {USERS.map((user, userIdx) => (
             <tr
               key={user}
-              className={`border-b border-gray-800/50 hover:bg-gray-800/30 ${
-                userIdx % 2 === 0 ? "bg-gray-900/30" : ""
+              className={`border-b border-gray-50 hover:bg-blue-50/30 transition-colors ${
+                userIdx % 2 === 0 ? "bg-gray-50/40" : "bg-white"
               }`}
             >
-              <td className="px-4 py-2.5 font-medium text-gray-200 sticky left-0 bg-gray-900 z-10 border-r border-gray-800/50">
+              <td className="px-4 py-2.5 font-medium text-gray-700 sticky left-0 bg-inherit z-10 border-r border-gray-100">
                 <div className="flex items-center gap-2">
                   <div
-                    className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-gray-950"
+                    className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm"
                     style={{ background: USER_COLORS[userIdx] }}
                   >
                     {user[0]}
@@ -128,7 +128,7 @@ function RatingsTable({
                       value={ratings[userIdx][movieIdx]}
                       onChange={(v) => onRatingChange(userIdx, movieIdx, v)}
                     />
-                    <span className="text-[10px] text-gray-600 font-mono">
+                    <span className="text-[10px] text-gray-300 font-mono">
                       {ratings[userIdx][movieIdx] === 0
                         ? "n/a"
                         : ratings[userIdx][movieIdx]}
@@ -163,35 +163,39 @@ function RecommendationsCards({
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {USERS.map((user, userIdx) => {
         const topRecs = recommendations[userIdx];
+        // Discovery: unrated or rated low (<=2) but SVD predicts high (>=3),
+        // OR SVD predicts notably higher than original (diff >= 1.5)
         const discoveries = topRecs.filter(
-          (r) => r.originalRating <= 2 && r.predictedRating >= 3
+          (r) =>
+            (r.originalRating === 0 && r.predictedRating >= 3.0) ||
+            (r.originalRating <= 2 && r.predictedRating >= 3.0) ||
+            (r.originalRating > 0 && r.predictedRating - r.originalRating >= 1.5)
         );
 
         return (
           <div
             key={user}
-            className="rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden"
+            className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden"
           >
-            <div className="px-4 py-3 bg-gray-900/60 border-b border-gray-800 flex items-center justify-between">
+            <div className="px-4 py-3 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div
-                  className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-gray-950"
+                  className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-sm"
                   style={{ background: USER_COLORS[userIdx] }}
                 >
                   {user[0]}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm">{user}</h3>
-                  <p className="text-[10px] text-gray-500">
+                  <h3 className="font-semibold text-sm text-gray-800">{user}</h3>
+                  <p className="text-[10px] text-gray-400">
                     {originalRatings[userIdx].filter((v) => v > 0).length}/
                     {MOVIES.length} rated
                   </p>
                 </div>
               </div>
               {discoveries.length > 0 && (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-                  {discoveries.length} new pick
-                  {discoveries.length > 1 ? "s" : ""}
+                <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium border border-green-100">
+                  {discoveries.length} discover{discoveries.length > 1 ? "ies" : "y"}
                 </span>
               )}
             </div>
@@ -199,48 +203,50 @@ function RecommendationsCards({
             <div className="p-3 space-y-1.5">
               {topRecs.map((rec) => {
                 const isDiscovery =
-                  rec.originalRating <= 2 && rec.predictedRating >= 3;
+                  (rec.originalRating === 0 && rec.predictedRating >= 3.0) ||
+                  (rec.originalRating <= 2 && rec.predictedRating >= 3.0) ||
+                  (rec.originalRating > 0 && rec.predictedRating - rec.originalRating >= 1.5);
                 const pct = Math.max(
                   0,
                   Math.min(100, (rec.predictedRating / 5) * 100)
                 );
                 const barColor =
                   rec.predictedRating >= 4
-                    ? "from-emerald-500 to-green-400"
+                    ? "from-green-400 to-green-500"
                     : rec.predictedRating >= 3
-                    ? "from-yellow-500 to-amber-400"
+                    ? "from-yellow-300 to-yellow-400"
                     : rec.predictedRating >= 2
-                    ? "from-orange-500 to-orange-400"
-                    : "from-red-500 to-red-400";
+                    ? "from-orange-300 to-orange-400"
+                    : "from-red-300 to-red-400";
 
                 return (
                   <div
                     key={rec.movieIdx}
-                    className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-xl text-xs transition-colors ${
                       isDiscovery
-                        ? "bg-emerald-500/10 border border-emerald-500/20"
-                        : "hover:bg-gray-800/40"
+                        ? "bg-green-50 border border-green-100"
+                        : "hover:bg-gray-50"
                     }`}
                   >
-                    <span className="w-28 truncate font-medium text-gray-300 flex items-center gap-1">
+                    <span className="w-28 truncate font-medium text-gray-600 flex items-center gap-1">
                       {isDiscovery && (
-                        <span className="text-emerald-400">✦</span>
+                        <span className="text-green-500">✦</span>
                       )}
                       {MOVIE_EMOJIS[rec.movieIdx]}{" "}
                       {rec.movie}
                     </span>
                     <div className="flex-1 flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-500`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="text-xs font-mono text-gray-400 w-8 text-right">
+                      <span className="text-xs font-mono text-gray-500 w-8 text-right">
                         {rec.predictedRating.toFixed(1)}
                       </span>
                     </div>
-                    <span className="text-[10px] text-gray-600 w-5 text-center font-mono">
+                    <span className="text-[10px] text-gray-300 w-5 text-center font-mono">
                       {rec.originalRating === 0 ? "—" : rec.originalRating}
                     </span>
                   </div>
@@ -248,10 +254,10 @@ function RecommendationsCards({
               })}
             </div>
 
-            <div className="px-4 py-2 border-t border-gray-800/50 flex items-center gap-3 text-[10px] text-gray-600">
+            <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-[10px] text-gray-400">
               <span>Bar = predicted</span>
-              <span>Right # = actual</span>
-              <span className="text-emerald-500">✦ = discovery</span>
+              <span>Right # = original</span>
+              <span className="text-green-500">✦ = discovery</span>
             </div>
           </div>
         );
@@ -282,13 +288,12 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
       emoji: MOVIE_EMOJIS[j],
       x: (Vt[0]?.[j] ?? 0) * S[0],
       y: has2 ? (Vt[1]?.[j] ?? 0) * S[1] : 0,
-      color: `hsl(${200 + j * 20}, 70%, 65%)`,
+      color: `hsl(${210 + j * 18}, 55%, 55%)`,
     }));
 
     return { users: userPts, movies: moviePts };
   }, [svd]);
 
-  // Calculate ranges
   const allX = [
     ...points.users.map((p) => p.x),
     ...points.movies.map((p) => p.x),
@@ -300,7 +305,7 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
 
   if (allX.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-800 bg-gray-900/80 p-8 text-center text-gray-500">
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-400 shadow-sm">
         No SVD data available
       </div>
     );
@@ -329,25 +334,28 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
   const zeroSy = toY(0);
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minHeight: 300 }}>
-        {/* Zero lines */}
-        <line x1={P} y1={zeroSy} x2={W - P} y2={zeroSy} stroke="#374151" strokeWidth={0.5} strokeDasharray="4,4" />
-        <line x1={zeroSx} y1={P} x2={zeroSx} y2={H - P} stroke="#374151" strokeWidth={0.5} strokeDasharray="4,4" />
+        {/* Background */}
+        <rect width={W} height={H} fill="#FAFAFA" />
+
+        {/* Grid */}
+        <line x1={P} y1={zeroSy} x2={W - P} y2={zeroSy} stroke="#E5E7EB" strokeWidth={0.5} strokeDasharray="4,4" />
+        <line x1={zeroSx} y1={P} x2={zeroSx} y2={H - P} stroke="#E5E7EB" strokeWidth={0.5} strokeDasharray="4,4" />
 
         {/* Axes */}
-        <line x1={P} y1={H - P} x2={W - P} y2={H - P} stroke="#4b5563" strokeWidth={1} />
-        <line x1={P} y1={P} x2={P} y2={H - P} stroke="#4b5563" strokeWidth={1} />
+        <line x1={P} y1={H - P} x2={W - P} y2={H - P} stroke="#D1D5DB" strokeWidth={1} />
+        <line x1={P} y1={P} x2={P} y2={H - P} stroke="#D1D5DB" strokeWidth={1} />
 
         {/* Axis labels */}
-        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#6b7280" fontSize={10}>
+        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#9CA3AF" fontSize={10}>
           Component 1
         </text>
         <text
           x={12}
           y={H / 2}
           textAnchor="middle"
-          fill="#6b7280"
+          fill="#9CA3AF"
           fontSize={10}
           transform={`rotate(-90, 12, ${H / 2})`}
         >
@@ -364,7 +372,7 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
             y2={toY(pt.y)}
             stroke={pt.color}
             strokeWidth={0.5}
-            opacity={0.25}
+            opacity={0.2}
           />
         ))}
 
@@ -387,27 +395,29 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
                 width={sz * 2}
                 height={sz * 2}
                 fill={pt.color}
-                opacity={isH ? 1 : 0.8}
+                opacity={isH ? 1 : 0.7}
                 transform={`rotate(45, ${sx}, ${sy})`}
+                rx={1}
               />
               {isH ? (
                 <>
                   <rect
                     x={sx - 50}
-                    y={sy - 24}
+                    y={sy - 26}
                     width={100}
-                    height={18}
-                    rx={4}
-                    fill="#111827"
+                    height={20}
+                    rx={6}
+                    fill="white"
                     stroke={pt.color}
-                    strokeWidth={0.5}
+                    strokeWidth={1}
+                    filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
                   />
-                  <text x={sx} y={sy - 12} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="bold">
+                  <text x={sx} y={sy - 13} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="600">
                     {pt.emoji} {pt.name}
                   </text>
                 </>
               ) : (
-                <text x={sx} y={sy + 14} textAnchor="middle" fill={pt.color} fontSize={7} opacity={0.6}>
+                <text x={sx} y={sy + 14} textAnchor="middle" fill="#9CA3AF" fontSize={7}>
                   {pt.name.length > 10 ? pt.name.slice(0, 9) + "…" : pt.name}
                 </text>
               )}
@@ -420,7 +430,7 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
           const sx = toX(pt.x);
           const sy = toY(pt.y);
           const isH = hovered === `u-${pt.name}`;
-          const r = isH ? 10 : 8;
+          const r = isH ? 11 : 9;
           return (
             <g
               key={`user-${pt.name}`}
@@ -436,12 +446,13 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
                 opacity={isH ? 1 : 0.85}
                 stroke={isH ? "white" : "none"}
                 strokeWidth={2}
+                filter={isH ? "drop-shadow(0 2px 4px rgba(0,0,0,0.15))" : "none"}
               />
               <text
                 x={sx}
                 y={sy + 4}
                 textAnchor="middle"
-                fill="#111827"
+                fill="white"
                 fontSize={10}
                 fontWeight="bold"
                 style={{ pointerEvents: "none" }}
@@ -451,16 +462,17 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
               {isH && (
                 <>
                   <rect
-                    x={sx - 30}
-                    y={sy - 26}
-                    width={60}
-                    height={18}
-                    rx={4}
-                    fill="#111827"
+                    x={sx - 32}
+                    y={sy - 28}
+                    width={64}
+                    height={20}
+                    rx={6}
+                    fill="white"
                     stroke={pt.color}
-                    strokeWidth={0.5}
+                    strokeWidth={1}
+                    filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
                   />
-                  <text x={sx} y={sy - 14} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="bold">
+                  <text x={sx} y={sy - 15} textAnchor="middle" fill={pt.color} fontSize={10} fontWeight="600">
                     {pt.name}
                   </text>
                 </>
@@ -470,16 +482,16 @@ function LatentSpaceViz({ svd }: { svd: SVDResult }) {
         })}
       </svg>
 
-      <div className="px-4 py-3 border-t border-gray-800/50 flex items-center gap-6 text-xs text-gray-400">
+      <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-6 text-xs text-gray-400">
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-gray-400" />
+          <div className="h-3 w-3 rounded-full bg-blue-400" />
           <span>Users</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 bg-gray-400 rotate-45" />
+          <div className="h-3 w-3 bg-blue-400 rotate-45 rounded-[1px]" />
           <span>Movies</span>
         </div>
-        <span className="text-gray-600 text-[10px]">
+        <span className="text-gray-300 text-[10px]">
           Nearby items share similar latent preferences
         </span>
       </div>
@@ -527,7 +539,7 @@ function SingularValuesChart({
 
   if (data.bars.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-800 bg-gray-900/80 p-8 text-center text-gray-500">
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-400 shadow-sm">
         No singular values
       </div>
     );
@@ -547,50 +559,52 @@ function SingularValuesChart({
   const maxS = Math.max(...data.bars.map((b) => b.value), 1);
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       {/* Energy header */}
-      <div className="px-4 py-3 border-b border-gray-800/50 flex items-center justify-between">
-        <div className="text-xs text-gray-400">
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="text-xs text-gray-500">
           Energy captured with{" "}
-          <span className="text-violet-400 font-mono">k={activeK}</span>:
+          <span className="text-blue-600 font-mono font-semibold">k={activeK}</span>:
         </div>
         <div className="flex items-center gap-3">
-          <div className="w-32 h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+              className="h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
               style={{ width: `${data.energyCaptured}%` }}
             />
           </div>
-          <span className="text-sm font-mono font-bold text-violet-400">
+          <span className="text-sm font-mono font-bold text-blue-600">
             {data.energyCaptured.toFixed(1)}%
           </span>
         </div>
       </div>
 
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minHeight: 280 }}>
+        <rect width={W} height={H} fill="#FAFAFA" />
+
         <defs>
-          <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8b5cf6" />
-            <stop offset="100%" stopColor="#6d28d9" />
+          <linearGradient id="barActive" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#60A5FA" />
+            <stop offset="100%" stopColor="#2563EB" />
           </linearGradient>
-          <linearGradient id="barGradH" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#a78bfa" />
-            <stop offset="100%" stopColor="#7c3aed" />
+          <linearGradient id="barActiveH" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#93C5FD" />
+            <stop offset="100%" stopColor="#3B82F6" />
           </linearGradient>
         </defs>
 
         {/* Y axis */}
-        <line x1={PL} y1={PT} x2={PL} y2={PT + cH} stroke="#4b5563" strokeWidth={1} />
+        <line x1={PL} y1={PT} x2={PL} y2={PT + cH} stroke="#D1D5DB" strokeWidth={1} />
         {/* X axis */}
-        <line x1={PL} y1={PT + cH} x2={W - PR} y2={PT + cH} stroke="#4b5563" strokeWidth={1} />
+        <line x1={PL} y1={PT + cH} x2={W - PR} y2={PT + cH} stroke="#D1D5DB" strokeWidth={1} />
 
         {/* Y grid */}
         {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
           const y = PT + cH * (1 - frac);
           return (
             <g key={frac}>
-              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#374151" strokeWidth={0.5} strokeDasharray="3,3" />
-              <text x={PL - 6} y={y + 3} textAnchor="end" fill="#6b7280" fontSize={9}>
+              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#F3F4F6" strokeWidth={0.5} />
+              <text x={PL - 6} y={y + 3} textAnchor="end" fill="#9CA3AF" fontSize={9}>
                 {(maxS * frac).toFixed(1)}
               </text>
             </g>
@@ -616,38 +630,38 @@ function SingularValuesChart({
                 y={y}
                 width={barW}
                 height={bH}
-                rx={3}
+                rx={4}
                 fill={
                   bar.active
                     ? isH
-                      ? "url(#barGradH)"
-                      : "url(#barGrad)"
+                      ? "url(#barActiveH)"
+                      : "url(#barActive)"
                     : isH
-                    ? "#4b5563"
-                    : "#374151"
+                    ? "#D1D5DB"
+                    : "#E5E7EB"
                 }
-                opacity={bar.active ? 1 : 0.5}
+                opacity={bar.active ? 1 : 0.6}
               />
 
               {isH && (
                 <>
-                  <rect x={x + barW / 2 - 28} y={y - 26} width={56} height={20} rx={4} fill="#111827" stroke={bar.active ? "#8b5cf6" : "#6b7280"} strokeWidth={0.5} />
-                  <text x={x + barW / 2} y={y - 13} textAnchor="middle" fill={bar.active ? "#a78bfa" : "#9ca3af"} fontSize={10} fontFamily="monospace" fontWeight="bold">
+                  <rect x={x + barW / 2 - 30} y={y - 28} width={60} height={22} rx={6} fill="white" stroke={bar.active ? "#3B82F6" : "#9CA3AF"} strokeWidth={1} filter="drop-shadow(0 1px 2px rgba(0,0,0,0.08))" />
+                  <text x={x + barW / 2} y={y - 14} textAnchor="middle" fill={bar.active ? "#2563EB" : "#6B7280"} fontSize={10} fontFamily="monospace" fontWeight="bold">
                     σ={bar.value.toFixed(2)}
                   </text>
                 </>
               )}
 
-              <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill={bar.active ? "#a78bfa" : "#6b7280"} fontSize={8} fontFamily="monospace">
+              <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill={bar.active ? "#3B82F6" : "#9CA3AF"} fontSize={8} fontFamily="monospace">
                 {bar.pct.toFixed(0)}%
               </text>
 
-              <text x={x + barW / 2} y={PT + cH + 16} textAnchor="middle" fill={bar.active ? "#a78bfa" : "#6b7280"} fontSize={10} fontFamily="monospace">
+              <text x={x + barW / 2} y={PT + cH + 16} textAnchor="middle" fill={bar.active ? "#3B82F6" : "#9CA3AF"} fontSize={10} fontFamily="monospace">
                 σ{i + 1}
               </text>
 
               {bar.active && (
-                <circle cx={x + barW / 2} cy={PT + cH + 28} r={3} fill="#8b5cf6" />
+                <circle cx={x + barW / 2} cy={PT + cH + 28} r={3} fill="#3B82F6" />
               )}
             </g>
           );
@@ -665,7 +679,7 @@ function SingularValuesChart({
                 })
                 .join(" ")}
               fill="none"
-              stroke="#f472b6"
+              stroke="#F97316"
               strokeWidth={1.5}
               strokeDasharray="4,2"
               opacity={0.7}
@@ -673,7 +687,7 @@ function SingularValuesChart({
             {data.cumulativePcts.map((pct, i) => {
               const x = PL + barGap * (i + 1) + barW * i + barW / 2;
               const y = PT + cH * (1 - pct / 100);
-              return <circle key={i} cx={x} cy={y} r={2.5} fill="#f472b6" opacity={0.8} />;
+              return <circle key={i} cx={x} cy={y} r={2.5} fill="#F97316" opacity={0.8} />;
             })}
           </>
         )}
@@ -687,23 +701,23 @@ function SingularValuesChart({
               y1={PT}
               x2={cutX}
               y2={PT + cH}
-              stroke="#ef4444"
+              stroke="#EF4444"
               strokeWidth={1}
               strokeDasharray="5,3"
-              opacity={0.6}
+              opacity={0.5}
             />
           );
         })()}
 
         {/* Axis titles */}
-        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#6b7280" fontSize={10}>
+        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#9CA3AF" fontSize={10}>
           Singular Values
         </text>
         <text
           x={12}
           y={PT + cH / 2}
           textAnchor="middle"
-          fill="#6b7280"
+          fill="#9CA3AF"
           fontSize={10}
           transform={`rotate(-90, 12, ${PT + cH / 2})`}
         >
@@ -711,17 +725,17 @@ function SingularValuesChart({
         </text>
       </svg>
 
-      <div className="px-4 py-3 border-t border-gray-800/50 flex items-center gap-6 text-xs text-gray-400">
+      <div className="px-4 py-3 border-t border-gray-100 flex items-center gap-6 text-xs text-gray-400">
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-violet-600" />
+          <div className="h-3 w-3 rounded bg-blue-500" />
           <span>Active</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded bg-gray-600" />
+          <div className="h-3 w-3 rounded bg-gray-300" />
           <span>Truncated</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-0.5 w-6" style={{ borderTop: "2px dashed #f472b6" }} />
+          <div className="h-0.5 w-6" style={{ borderTop: "2px dashed #F97316" }} />
           <span>Cumulative energy</span>
         </div>
       </div>
@@ -733,14 +747,16 @@ function SingularValuesChart({
 function HeatmapComparison({
   original,
   predicted,
+  kValue,
 }: {
   original: number[][];
   predicted: number[][];
+  kValue: number;
 }) {
   const [hoveredCell, setHoveredCell] = useState<{ r: number; c: number } | null>(null);
 
   const cellSize = 44;
-  const labelW = 60;
+  const labelW = 64;
   const labelH = 70;
   const gapBetween = 40;
   const w1 = labelW + MOVIES.length * cellSize;
@@ -749,28 +765,35 @@ function HeatmapComparison({
 
   function getColor(val: number, max: number) {
     const t = Math.max(0, Math.min(1, val / max));
-    // Blue → Green → Yellow → Red
-    const r = Math.round(t < 0.5 ? 30 + t * 2 * 100 : 130 + (t - 0.5) * 2 * 125);
-    const g = Math.round(t < 0.5 ? 60 + t * 2 * 150 : 210 - (t - 0.5) * 2 * 130);
-    const b = Math.round(t < 0.5 ? 180 - t * 2 * 120 : 60 - (t - 0.5) * 2 * 50);
+    // Apple-ish blue scale: light gray-blue → blue → deep blue
+    const r = Math.round(240 - t * 200);
+    const g = Math.round(243 - t * 160);
+    const b = Math.round(250 - t * 20);
     return `rgb(${r},${g},${b})`;
   }
 
+  function getTextColor(val: number) {
+    return val >= 3 ? "white" : "#374151";
+  }
+
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-800/50">
-        <h3 className="text-sm font-semibold text-gray-300">Original vs Predicted — Side by Side Heatmap</h3>
-        <p className="text-[10px] text-gray-500 mt-1">
-          Left: original ratings (0=unrated). Right: SVD predicted scores. Hover to compare.
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-100">
+        <h3 className="text-sm font-semibold text-gray-700">Original vs Predicted — Side by Side Heatmap</h3>
+        <p className="text-[10px] text-gray-400 mt-1">
+          Left: original ratings (0 = unrated). Right: SVD predicted scores. Hover to compare differences.
         </p>
       </div>
       <div className="overflow-x-auto p-4">
         <svg viewBox={`0 0 ${totalW + 20} ${totalH}`} className="w-full" style={{ minHeight: 280 }}>
+          {/* Background */}
+          <rect width={totalW + 20} height={totalH} fill="white" />
+
           {/* Headers */}
-          <text x={labelW + (MOVIES.length * cellSize) / 2} y={14} textAnchor="middle" fill="#9ca3af" fontSize={11} fontWeight="bold">
+          <text x={labelW + (MOVIES.length * cellSize) / 2} y={14} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight="600">
             Original Ratings
           </text>
-          <text x={w1 + gapBetween + (MOVIES.length * cellSize) / 2} y={14} textAnchor="middle" fill="#9ca3af" fontSize={11} fontWeight="bold">
+          <text x={w1 + gapBetween + (MOVIES.length * cellSize) / 2} y={14} textAnchor="middle" fill="#6B7280" fontSize={11} fontWeight="600">
             SVD Predicted
           </text>
 
@@ -781,7 +804,7 @@ function HeatmapComparison({
                 x={labelW - 6}
                 y={labelH + ui * cellSize + cellSize / 2 + 3}
                 textAnchor="end"
-                fill="#9ca3af"
+                fill="#6B7280"
                 fontSize={10}
               >
                 {user}
@@ -797,13 +820,12 @@ function HeatmapComparison({
                     onMouseEnter={() => setHoveredCell({ r: ui, c: mi })}
                     onMouseLeave={() => setHoveredCell(null)}
                   >
-                    {/* Column label (only first row) */}
                     {ui === 0 && (
                       <text
                         x={x + cellSize / 2}
                         y={labelH - 8}
                         textAnchor="middle"
-                        fill="#6b7280"
+                        fill="#9CA3AF"
                         fontSize={7}
                         transform={`rotate(-45, ${x + cellSize / 2}, ${labelH - 8})`}
                       >
@@ -815,16 +837,16 @@ function HeatmapComparison({
                       y={y + 1}
                       width={cellSize - 2}
                       height={cellSize - 2}
-                      rx={4}
-                      fill={val === 0 ? "#1f2937" : getColor(val, 5)}
-                      stroke={isH ? "#fff" : "#111827"}
-                      strokeWidth={isH ? 2 : 1}
+                      rx={6}
+                      fill={val === 0 ? "#F9FAFB" : getColor(val, 5)}
+                      stroke={isH ? "#3B82F6" : "#E5E7EB"}
+                      strokeWidth={isH ? 2 : 0.5}
                     />
                     <text
                       x={x + cellSize / 2}
                       y={y + cellSize / 2 + 4}
                       textAnchor="middle"
-                      fill={val === 0 ? "#4b5563" : "#fff"}
+                      fill={val === 0 ? "#D1D5DB" : getTextColor(val)}
                       fontSize={11}
                       fontWeight="bold"
                       fontFamily="monospace"
@@ -842,8 +864,8 @@ function HeatmapComparison({
             x={w1 + gapBetween / 2}
             y={labelH + (USERS.length * cellSize) / 2 + 4}
             textAnchor="middle"
-            fill="#6b7280"
-            fontSize={18}
+            fill="#D1D5DB"
+            fontSize={20}
           >
             →
           </text>
@@ -857,7 +879,7 @@ function HeatmapComparison({
                 const val = predicted[ui]?.[mi] ?? 0;
                 const isH = hoveredCell?.r === ui && hoveredCell?.c === mi;
                 const origVal = original[ui][mi];
-                const diff = val - origVal;
+                const diff = origVal > 0 ? val - origVal : 0;
                 return (
                   <g
                     key={`p-${ui}-${mi}`}
@@ -869,7 +891,7 @@ function HeatmapComparison({
                         x={x + cellSize / 2}
                         y={labelH - 8}
                         textAnchor="middle"
-                        fill="#6b7280"
+                        fill="#9CA3AF"
                         fontSize={7}
                         transform={`rotate(-45, ${x + cellSize / 2}, ${labelH - 8})`}
                       >
@@ -881,16 +903,16 @@ function HeatmapComparison({
                       y={y + 1}
                       width={cellSize - 2}
                       height={cellSize - 2}
-                      rx={4}
+                      rx={6}
                       fill={getColor(val, 5)}
-                      stroke={isH ? "#fff" : "#111827"}
-                      strokeWidth={isH ? 2 : 1}
+                      stroke={isH ? "#3B82F6" : "#E5E7EB"}
+                      strokeWidth={isH ? 2 : 0.5}
                     />
                     <text
                       x={x + cellSize / 2}
-                      y={y + cellSize / 2 + 1}
+                      y={y + cellSize / 2 + (isH && origVal > 0 ? -1 : 4)}
                       textAnchor="middle"
-                      fill="#fff"
+                      fill={getTextColor(val)}
                       fontSize={10}
                       fontWeight="bold"
                       fontFamily="monospace"
@@ -902,11 +924,25 @@ function HeatmapComparison({
                         x={x + cellSize / 2}
                         y={y + cellSize / 2 + 13}
                         textAnchor="middle"
-                        fill={diff >= 0 ? "#4ade80" : "#f87171"}
+                        fill={diff >= 0 ? "#22C55E" : "#EF4444"}
                         fontSize={7}
                         fontFamily="monospace"
+                        fontWeight="600"
                       >
                         {diff >= 0 ? "+" : ""}{diff.toFixed(1)}
+                      </text>
+                    )}
+                    {isH && origVal === 0 && (
+                      <text
+                        x={x + cellSize / 2}
+                        y={y + cellSize / 2 + 13}
+                        textAnchor="middle"
+                        fill="#3B82F6"
+                        fontSize={7}
+                        fontFamily="monospace"
+                        fontWeight="600"
+                      >
+                        new!
                       </text>
                     )}
                   </g>
@@ -921,13 +957,41 @@ function HeatmapComparison({
             const y = totalH - 12;
             return (
               <g key={`scale-${v}`}>
-                <rect x={x} y={y - 10} width={20} height={10} rx={2} fill={v === 0 ? "#1f2937" : getColor(v, 5)} />
-                <text x={x + 10} y={y + 8} textAnchor="middle" fill="#6b7280" fontSize={7}>{v}</text>
+                <rect x={x} y={y - 10} width={20} height={10} rx={3} fill={v === 0 ? "#F9FAFB" : getColor(v, 5)} stroke="#E5E7EB" strokeWidth={0.5} />
+                <text x={x + 10} y={y + 8} textAnchor="middle" fill="#9CA3AF" fontSize={7}>{v}</text>
               </g>
             );
           })}
-          <text x={totalW - 150 - 4} y={totalH - 10} textAnchor="end" fill="#6b7280" fontSize={8}>Scale:</text>
+          <text x={totalW - 150 - 4} y={totalH - 10} textAnchor="end" fill="#9CA3AF" fontSize={8}>Scale:</text>
         </svg>
+      </div>
+
+      {/* Explanation */}
+      <div className="px-5 py-4 border-t border-gray-100 bg-blue-50/50">
+        <h4 className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          Why don't the heatmaps match exactly?
+        </h4>
+        <p className="text-[11px] text-gray-600 leading-relaxed">
+          The predicted heatmap is a <strong className="text-gray-700">rank-{kValue} approximation</strong> of the original
+          matrix — not a copy. SVD decomposes ratings into {kValue} latent factor{kValue > 1 ? "s" : ""} (think of them as
+          hidden themes like "action lover" or "animation fan"). When we reconstruct
+          with only the top {kValue} factor{kValue > 1 ? "s" : ""}, we <strong className="text-gray-700">smooth out noise and fill in gaps</strong>:
+        </p>
+        <ul className="text-[11px] text-gray-600 mt-2 space-y-1 list-none">
+          <li className="flex items-start gap-1.5">
+            <span className="text-blue-500 mt-0.5">▸</span>
+            <span><strong className="text-gray-700">Rated cells differ</strong> because the low-rank approximation can't perfectly reproduce every individual rating — it captures the dominant patterns while discarding minor variations (noise). A user's "3" might predict as 3.4 because similar users tended to rate that movie slightly higher.</span>
+          </li>
+          <li className="flex items-start gap-1.5">
+            <span className="text-green-500 mt-0.5">▸</span>
+            <span><strong className="text-gray-700">Unrated cells get filled</strong> — this is the magic of SVD. By learning latent patterns from existing ratings, the model infers what a user <em>would have</em> rated a movie they haven't seen. A high predicted score on an unrated movie = a strong recommendation.</span>
+          </li>
+          <li className="flex items-start gap-1.5">
+            <span className="text-orange-500 mt-0.5">▸</span>
+            <span><strong className="text-gray-700">Lower k = more smoothing</strong>. Try moving the rank slider: at k=1, everything collapses to one pattern; at k={Math.min(USERS.length, MOVIES.length)}, the approximation is nearly exact. The sweet spot captures real preferences without overfitting to noise.</span>
+          </li>
+        </ul>
       </div>
     </div>
   );
@@ -959,7 +1023,7 @@ export function App() {
   // SVD computation
   const svdResult = useMemo(() => {
     try {
-      // Replace 0s with row-mean
+      // Replace 0s with row-mean for SVD input
       const normalized = ratings.map((row) => {
         const nonZero = row.filter((v) => v > 0);
         const mean =
@@ -969,7 +1033,7 @@ export function App() {
         return row.map((v) => (v === 0 ? mean : v));
       });
 
-      // Center
+      // Center around global mean
       const allVals = normalized.flat();
       const globalMean =
         allVals.reduce((a, b) => a + b, 0) / allVals.length;
@@ -988,7 +1052,6 @@ export function App() {
 
       return { svd, predicted };
     } catch {
-      // Fallback
       return {
         svd: { U: [], S: [], Vt: [] } as SVDResult,
         predicted: ratings.map((row) => row.map((v) => (v === 0 ? 2.5 : v))),
@@ -1015,26 +1078,26 @@ export function App() {
   const maxK = Math.min(USERS.length, MOVIES.length);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-indigo-950 text-gray-100">
+    <div className="min-h-screen bg-[#F5F5F7] text-gray-800">
       {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-950/60 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20 text-xl">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-xl">
               🎬
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold text-gray-900">
                 SVD Movie Recommender
               </h1>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-400">
                 Singular Value Decomposition · Interactive Demo
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-gray-800/60 rounded-lg px-3 py-2 border border-gray-700/50">
-              <label className="text-xs text-gray-400 font-medium">
+            <div className="flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
+              <label className="text-xs text-gray-500 font-medium">
                 SVD Rank (k):
               </label>
               <input
@@ -1043,15 +1106,15 @@ export function App() {
                 max={maxK}
                 value={kValue}
                 onChange={(e) => setKValue(Number(e.target.value))}
-                className="w-24 accent-violet-500"
+                className="w-24 accent-blue-500"
               />
-              <span className="text-sm font-mono text-violet-400 w-4 text-center">
+              <span className="text-sm font-mono text-blue-600 w-4 text-center font-semibold">
                 {kValue}
               </span>
             </div>
             <button
               onClick={handleReset}
-              className="px-3 py-2 text-xs font-medium bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors cursor-pointer"
+              className="px-3 py-2 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer text-gray-600"
             >
               Reset
             </button>
@@ -1061,13 +1124,13 @@ export function App() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {/* Info */}
-        <div className="bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border border-violet-500/20 rounded-xl p-4">
-          <p className="text-sm text-gray-300 leading-relaxed">
-            <span className="font-semibold text-violet-400">How it works:</span>{" "}
+        <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            <span className="font-semibold text-blue-600">How it works:</span>{" "}
             SVD decomposes the user-movie ratings matrix{" "}
-            <span className="font-mono text-fuchsia-400">R ≈ U·Σ·Vᵀ</span>{" "}
+            <span className="font-mono text-blue-600 bg-blue-50 px-1 py-0.5 rounded">R ≈ U·Σ·Vᵀ</span>{" "}
             into latent factors. By keeping only the top{" "}
-            <span className="font-mono text-violet-400">k={kValue}</span>{" "}
+            <span className="font-mono text-blue-600 font-semibold">k={kValue}</span>{" "}
             singular values, we capture dominant patterns (e.g., genre
             preferences) and predict missing ratings. Click any star below to
             change ratings and see recommendations update live.
@@ -1077,7 +1140,7 @@ export function App() {
         {/* 1: Ratings Table */}
         <section>
           <SectionHeader
-            color="from-violet-500 to-fuchsia-500"
+            color="from-blue-500 to-blue-600"
             title="User Ratings Matrix"
             subtitle="Click stars to edit · 0 = not rated"
           />
@@ -1090,8 +1153,8 @@ export function App() {
         {/* 2: Recommendations */}
         <section>
           <SectionHeader
-            color="from-emerald-500 to-teal-500"
-            title="Predicted Ratings & Recommendations"
+            color="from-green-500 to-green-600"
+            title="Predicted Ratings & Discoveries"
             subtitle={`Reconstructed from rank-${kValue} SVD`}
           />
           <RecommendationsCards
@@ -1103,13 +1166,14 @@ export function App() {
         {/* 3: Heatmap Comparison */}
         <section>
           <SectionHeader
-            color="from-cyan-500 to-blue-500"
+            color="from-orange-400 to-orange-500"
             title="Original vs Predicted Heatmap"
             subtitle="Visual comparison of actual and SVD-predicted ratings"
           />
           <HeatmapComparison
             original={ratings}
             predicted={svdResult.predicted}
+            kValue={kValue}
           />
         </section>
 
@@ -1117,7 +1181,7 @@ export function App() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section>
             <SectionHeader
-              color="from-amber-500 to-orange-500"
+              color="from-purple-500 to-purple-600"
               title="Latent Space (2D)"
               subtitle="Users & Movies projected in SVD space"
             />
@@ -1125,7 +1189,7 @@ export function App() {
           </section>
           <section>
             <SectionHeader
-              color="from-rose-500 to-pink-500"
+              color="from-red-400 to-red-500"
               title="Singular Values"
               subtitle="Energy distribution across components"
             />
@@ -1134,7 +1198,7 @@ export function App() {
         </div>
       </main>
 
-      <footer className="border-t border-gray-800 mt-12 py-6 text-center text-xs text-gray-600">
+      <footer className="border-t border-gray-200 mt-12 py-6 text-center text-xs text-gray-400 bg-white">
         SVD Movie Recommender System · Built with React & Tailwind CSS
       </footer>
     </div>
@@ -1153,8 +1217,8 @@ function SectionHeader({
   return (
     <div className="flex items-center gap-2 mb-3">
       <div className={`h-6 w-1 rounded-full bg-gradient-to-b ${color}`} />
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <span className="text-xs text-gray-500 ml-2">{subtitle}</span>
+      <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+      <span className="text-xs text-gray-400 ml-2">{subtitle}</span>
     </div>
   );
 }
